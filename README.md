@@ -2,7 +2,45 @@
 
 > Özel ders öğretmenleri için akıllı yönetim uygulaması
 
-DersHub; öğrenci takibi, ders takvimi, ödeme yönetimi ve not tutma işlemlerini tek bir çatı altında toplayan modern bir Flutter mobil uygulamasıdır.
+DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek için tasarlanmış **hepsi bir arada** bir mobil uygulamadır. Öğrenci takibi, ders takvimi, ödeme yönetimi ve not tutma gibi tüm ihtiyaçları tek bir çatı altında toplar.
+
+---
+
+## 🎯 Ne İşe Yarar?
+
+Özel ders öğretmenleri genellikle öğrenci bilgilerini, ders programlarını ve ödeme takiplerini farklı araçlarla (Excel, takvim uygulaması, not defteri vb.) yönetir. **DersHub**, bu dağınık süreci merkezi bir platforma taşıyarak öğretmenlerin zamandan tasarruf etmesini ve işlerini daha profesyonel yönetmesini sağlar.
+
+### Uygulamayla neler yapabilirsiniz?
+
+- 👨‍🎓 **Öğrencilerinizi kaydedin ve yönetin** — İsim, sınıf, branş, saat ücreti bilgileriyle öğrenci profilleri oluşturun. Aktif/pasif durumlarını takip edin, arama ve filtreleme ile anında erişin.
+
+- 📅 **Ders programınızı planlayın** — Takvim üzerinde derslerinizi görsel olarak yönetin. Hangi gün, hangi öğrenciyle, hangi konuyu işleyeceğinizi planlayın. Haftalık gelir ve ders sayınızı anlık takip edin.
+
+- 💰 **Ödemelerinizi takip edin** — Ders oluşturduğunuzda otomatik olarak ödeme kaydı oluşturulur. Aylık kazanç raporu, bekleyen ödemeler, gecikmiş ödemeler ve ödeme dağılım grafikleriyle finansal durumunuzu her an görün.
+
+- 📝 **Renkli notlar tutun** — Öğrencilerinize özel veya genel notlar oluşturun. Renk kodlamasıyla notlarınızı kategorize edin, ödev takibi ve ders planlaması yapın.
+
+- 🔔 **Hatırlatmalar alın** — Yaklaşan dersler ve ödeme tarihleri için otomatik bildirimler alarak hiçbir şeyi kaçırmayın.
+
+- 👤 **Profilinizi özelleştirin** — Ad, branş bilgilerinizi düzenleyin; tema (açık/koyu), dil ve bildirim tercihlerinizi yönetin. Verilerinizi CSV olarak dışa aktarın.
+
+---
+
+## 📸 Ekran Görüntüleri
+
+<p align="center">
+  <img src="screenshots/ogrenciler.png" width="200" alt="Öğrenciler Ekranı" />
+  &nbsp;&nbsp;
+  <img src="screenshots/takvim.png" width="200" alt="Takvim Ekranı" />
+  &nbsp;&nbsp;
+  <img src="screenshots/odemeler.png" width="200" alt="Ödemeler Ekranı" />
+  &nbsp;&nbsp;
+  <img src="screenshots/profil.png" width="200" alt="Profil Ekranı" />
+</p>
+
+<p align="center">
+  <em>Soldan sağa: Öğrenciler · Takvim · Ödemeler · Profil</em>
+</p>
 
 ---
 
