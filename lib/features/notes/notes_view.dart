@@ -76,6 +76,7 @@ class NotesView extends ConsumerWidget {
             Center(child: Text('Hata oluştu: ${err.toString()}')),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'notes_fab',
         onPressed: () {
           final students = studentsAsync.value ?? [];
           _showAddNoteSheet(context, students);
