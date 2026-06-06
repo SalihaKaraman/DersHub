@@ -36,6 +36,50 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     await ref.read(databaseServiceProvider).updateStudent(updated);
   }
 
+  Future<void> _editHourlyRate() async {
+    if (!widget.student.isActive) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sadece aktif öğrencilerin ücreti değiştirilebilir.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    final controller = TextEditingController(text: widget.student.hourlyRate.toString());
+    final res = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Saatlik Ücreti Düzenle'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(suffixText: 'TL'),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Kaydet'),
+          ),
+        ],
+      ),
+    );
+
+    if (res == true) {
+      final newRate = double.tryParse(controller.text.trim());
+      if (newRate != null) {
+        final updated = widget.student.copyWith(hourlyRate: newRate);
+        await ref.read(databaseServiceProvider).updateStudent(updated);
+      }
+    }
+  }
+
   Future<void> _addLesson() async {
     final topicController = TextEditingController();
     final durationController = TextEditingController(text: '60');
@@ -254,28 +298,35 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               const SizedBox(height: AppSizes.p12),
                               Row(
                                 children: [
-                                  Chip(
-                                    label: Text(
-                                      widget.student.isActive
-                                          ? 'Aktif'
-                                          : 'Pasif',
-                                    ),
-                                    backgroundColor: statusColor.withValues(
-                                      alpha: 0.16,
-                                    ),
-                                    labelStyle: TextStyle(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
                                       color: statusColor,
-                                      fontWeight: FontWeight.w600,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Text(
+                                      widget.student.isActive ? 'Aktif' : 'Pasif',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: AppSizes.p12),
-                                  Chip(
-                                    label: Text(
-                                      '${AppHelpers.formatCurrency(widget.student.hourlyRate)}/saat',
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white24,
+                                      borderRadius: BorderRadius.circular(16),
                                     ),
-                                    backgroundColor: Colors.white24,
-                                    labelStyle: TextStyle(
-                                      color: statusColor,
+                                    child: Text(
+                                      '${AppHelpers.formatCurrency(widget.student.hourlyRate)}/saat',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -283,11 +334,21 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               const SizedBox(height: AppSizes.p12),
                               Row(
                                 children: [
-                                  const Text('Durum:'),
-                                  const SizedBox(width: AppSizes.p8),
+                                  const Text(
+                                    'Öğrenci Durumu:',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSizes.p12),
                                   Switch(
                                     value: widget.student.isActive,
                                     onChanged: (v) => _toggleActive(v),
+                                    activeColor: Colors.white,
+                                    activeTrackColor: AppColors.success,
+                                    inactiveThumbColor: Colors.grey.shade400,
+                                    inactiveTrackColor: Colors.white24,
                                   ),
                                 ],
                               ),
@@ -324,6 +385,11 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                       title: const Text('Saatlik Ücret'),
                       subtitle: Text(
                         AppHelpers.formatCurrency(widget.student.hourlyRate),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit, color: AppColors.primary),
+                        onPressed: _editHourlyRate,
+                        tooltip: 'Ücreti Düzenle',
                       ),
                     ),
                   ),
