@@ -321,6 +321,7 @@ class _StudentsViewState extends ConsumerState<StudentsView> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'students_fab',
         onPressed: () => _showAddStudentSheet(context),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,

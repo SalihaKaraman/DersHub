@@ -188,6 +188,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
       ),
       floatingActionButton: studentsAsync.when(
         data: (students) => FloatingActionButton.extended(
+          heroTag: 'calendar_fab',
           onPressed: () => _showAddLessonSheet(context, students),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -195,6 +196,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           label: const Text('Ders Planla'),
         ),
         loading: () => const FloatingActionButton(
+          heroTag: 'calendar_fab_loading',
           onPressed: null,
           child: CircularProgressIndicator(color: Colors.white),
         ),

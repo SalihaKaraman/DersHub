@@ -281,6 +281,7 @@ class _PaymentsViewState extends ConsumerState<PaymentsView> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'payments_fab',
         onPressed: () => _showCollectPaymentSheet(context, filteredPayments),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
