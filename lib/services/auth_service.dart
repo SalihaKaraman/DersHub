@@ -252,4 +252,86 @@ class AuthService {
       _ref.read(authLoadingProvider.notifier).state = false;
     }
   }
+
+  Future<void> updateTeacherProfile({
+    required String fullName,
+    required String subject,
+  }) async {
+    _ref.read(authLoadingProvider.notifier).state = true;
+    _ref.read(authErrorProvider.notifier).state = null;
+
+    try {
+      if (_useMockMode) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (_currentMockUser != null) {
+          _currentMockUser = _currentMockUser!.copyWith(
+            fullName: fullName,
+            subject: subject,
+          );
+          _mockAuthStateController.add(_currentMockUser);
+        }
+        return;
+      }
+
+      final fbUser = _firebaseAuth!.currentUser;
+      if (fbUser == null) throw Exception('Kullanıcı oturumu bulunamadı.');
+
+      await fbUser.updateDisplayName(fullName);
+
+      await FirebaseFirestore.instance
+          .collection('teachers')
+          .doc(fbUser.uid)
+          .set({
+        'fullName': fullName,
+        'subject': subject,
+        'email': fbUser.email ?? '',
+      }, SetOptions(merge: true));
+
+      _currentTeacher = _currentTeacher?.copyWith(
+        fullName: fullName,
+        subject: subject,
+      );
+      // Re-emit so listeners pick up the update
+      if (_currentTeacher != null) {
+        _mockAuthStateController.add(_currentTeacher);
+      }
+    } catch (e) {
+      _ref.read(authErrorProvider.notifier).state = e.toString();
+      rethrow;
+    } finally {
+      _ref.read(authLoadingProvider.notifier).state = false;
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    _ref.read(authLoadingProvider.notifier).state = true;
+    _ref.read(authErrorProvider.notifier).state = null;
+
+    try {
+      if (_useMockMode) {
+        await Future.delayed(const Duration(milliseconds: 800));
+        _currentMockUser = null;
+        _mockAuthStateController.add(null);
+        return;
+      }
+
+      final fbUser = _firebaseAuth!.currentUser;
+      if (fbUser == null) throw Exception('Kullanıcı oturumu bulunamadı.');
+
+      // Delete teacher document from Firestore
+      await FirebaseFirestore.instance
+          .collection('teachers')
+          .doc(fbUser.uid)
+          .delete();
+
+      // Delete the Firebase Auth account
+      await fbUser.delete();
+      _currentTeacher = null;
+    } catch (e) {
+      _ref.read(authErrorProvider.notifier).state = e.toString();
+      rethrow;
+    } finally {
+      _ref.read(authLoadingProvider.notifier).state = false;
+    }
+  }
 }
