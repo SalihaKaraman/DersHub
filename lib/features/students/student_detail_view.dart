@@ -274,8 +274,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                       '${AppHelpers.formatCurrency(widget.student.hourlyRate)}/saat',
                                     ),
                                     backgroundColor: Colors.white24,
-                                    labelStyle: const TextStyle(
-                                      color: Colors.white,
+                                    labelStyle: TextStyle(
+                                      color: statusColor,
                                     ),
                                   ),
                                 ],
