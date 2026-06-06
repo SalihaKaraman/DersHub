@@ -11,11 +11,258 @@ import '../../services/database_service.dart';
 import '../../services/settings_service.dart';
 import '../../services/notification_service.dart';
 
-class ProfileView extends ConsumerWidget {
+class ProfileView extends ConsumerStatefulWidget {
   const ProfileView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileView> createState() => _ProfileViewState();
+}
+
+class _ProfileViewState extends ConsumerState<ProfileView> {
+  Future<void> _copyCsvData(
+    List<Student> students,
+    List<Lesson> lessons,
+    List<Payment> payments,
+  ) async {
+    final buffer = StringBuffer();
+    buffer.writeln('Type,Id,Name,Extra,Amount,DueDate');
+    for (final student in students) {
+      buffer.writeln(
+        'Student,${student.id},${student.nickname},${student.subject},,${student.createdAt.toIso8601String()}',
+      );
+    }
+    for (final lesson in lessons) {
+      buffer.writeln(
+        'Lesson,${lesson.id},${lesson.studentName},,${lesson.price},${lesson.dateTime.toIso8601String()}',
+      );
+    }
+    for (final payment in payments) {
+      buffer.writeln(
+        'Payment,${payment.id},${payment.studentName},${payment.status},${payment.amount},${payment.dueDate.toIso8601String()}',
+      );
+    }
+
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('CSV verileri panoya kopyalandı.'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    }
+  }
+
+  void _showEditProfileDialog(String currentName, String currentSubject) {
+    final nameController = TextEditingController(text: currentName);
+    final subjectController = TextEditingController(text: currentSubject);
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.r24),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.edit_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('Profili Düzenle'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Ad Soyad',
+                  prefixIcon: Icon(Icons.person_outline_rounded),
+                ),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: AppSizes.p16),
+              TextField(
+                controller: subjectController,
+                decoration: const InputDecoration(
+                  labelText: 'Branş',
+                  prefixIcon: Icon(Icons.school_outlined),
+                ),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('İptal'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                final subject = subjectController.text.trim();
+                if (name.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Ad Soyad boş bırakılamaz.'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext);
+                try {
+                  await ref.read(authServiceProvider).updateTeacherProfile(
+                        fullName: name,
+                        subject: subject.isEmpty ? 'Genel Ders' : subject,
+                      );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Profil başarıyla güncellendi.'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Hata: ${e.toString()}'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.check_rounded),
+              label: const Text('Kaydet'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.r24),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.error,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('Hesabı Sil'),
+            ],
+          ),
+          content: const Text(
+            'Hesabınız ve tüm verileriniz kalıcı olarak silinecektir. Bu işlem geri alınamaz.\n\nDevam etmek istediğinize emin misiniz?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Vazgeç'),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                Navigator.pop(dialogContext);
+                try {
+                  await ref.read(authServiceProvider).deleteAccount();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Hesabınız başarıyla silindi.'),
+                        backgroundColor: AppColors.success,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Hata: ${e.toString()}'),
+                        backgroundColor: AppColors.error,
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.delete_forever_rounded),
+              label: const Text('Hesabı Sil'),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.error,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showInfoDialog(String title, String message) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.r24),
+          ),
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Kapat'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _copyToClipboard(String label, String value) {
+    Clipboard.setData(ClipboardData(text: value));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$label kopyalandı: $value'),
+        backgroundColor: AppColors.primary,
+        duration: const Duration(milliseconds: 1500),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeProvider);
@@ -43,41 +290,6 @@ class ProfileView extends ConsumerWidget {
       error: (_, __) => 0.0,
     );
 
-    Future<void> copyCsvData(
-      BuildContext context,
-      List<Student> students,
-      List<Lesson> lessons,
-      List<Payment> payments,
-    ) async {
-      final buffer = StringBuffer();
-      buffer.writeln('Type,Id,Name,Extra,Amount,DueDate');
-      for (final student in students) {
-        buffer.writeln(
-          'Student,${student.id},${student.nickname},${student.subject},,${student.createdAt.toIso8601String()}',
-        );
-      }
-      for (final lesson in lessons) {
-        buffer.writeln(
-          'Lesson,${lesson.id},${lesson.studentName},,${lesson.price},${lesson.dateTime.toIso8601String()}',
-        );
-      }
-      for (final payment in payments) {
-        buffer.writeln(
-          'Payment,${payment.id},${payment.studentName},${payment.status},${payment.amount},${payment.dueDate.toIso8601String()}',
-        );
-      }
-
-      await Clipboard.setData(ClipboardData(text: buffer.toString()));
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('CSV verileri panoya kopyalandı.'),
-            backgroundColor: AppColors.success,
-          ),
-        );
-      }
-    }
-
     return authState.when(
       data: (teacher) {
         final displayName = teacher?.fullName ?? 'DersHub Öğretmeni';
@@ -91,97 +303,127 @@ class ProfileView extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSizes.p24),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(AppSizes.r24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.2),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                  // ── Profile Header Card ──
+                  GestureDetector(
+                    onTap: () => _showEditProfileDialog(
+                      displayName,
+                      displaySubject,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 68,
-                              height: 68,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  displayName.isNotEmpty ? displayName[0] : 'D',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSizes.p24),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(AppSizes.r24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.2),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.white.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: AppSizes.p16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    displayName,
-                                    style: theme.textTheme.titleLarge?.copyWith(
+                                child: Center(
+                                  child: Text(
+                                    displayName.isNotEmpty
+                                        ? displayName[0]
+                                        : 'D',
+                                    style: const TextStyle(
                                       color: Colors.white,
+                                      fontSize: 28,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  const SizedBox(height: AppSizes.p4),
-                                  Text(
-                                    displaySubject,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: Colors.white70,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSizes.p24),
-                        Text(
-                          'Profil Özeti',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                              const SizedBox(width: AppSizes.p16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      displayName,
+                                      style: theme.textTheme.titleLarge
+                                          ?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSizes.p4),
+                                    Text(
+                                      displaySubject,
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.edit_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: AppSizes.p12),
-                        Row(
-                          children: [
-                            _buildStatTile(
-                              label: 'Öğrenci',
-                              value: studentCount.toString(),
-                              icon: Icons.people_rounded,
+                          const SizedBox(height: AppSizes.p24),
+                          Text(
+                            'Profil Özeti',
+                            style:
+                                theme.textTheme.titleMedium?.copyWith(
                               color: Colors.white,
+                              fontWeight: FontWeight.w600,
                             ),
-                            const SizedBox(width: AppSizes.p12),
-                            _buildStatTile(
-                              label: 'Ders',
-                              value: lessonCount.toString(),
-                              icon: Icons.schedule_rounded,
-                              color: Colors.white,
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(height: AppSizes.p12),
+                          Row(
+                            children: [
+                              _buildStatTile(
+                                label: 'Öğrenci',
+                                value: studentCount.toString(),
+                                icon: Icons.people_rounded,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: AppSizes.p12),
+                              _buildStatTile(
+                                label: 'Ders',
+                                value: lessonCount.toString(),
+                                icon: Icons.schedule_rounded,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: AppSizes.p24),
+
+                  // ── Hesap Detayları ──
                   Text(
                     'Hesap Detayları',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -196,28 +438,42 @@ class ProfileView extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildProfileTile(
-                          context,
+                        _buildTappableProfileTile(
                           label: 'E-posta',
                           value: email,
                           icon: Icons.email_outlined,
+                          onTap: () => _copyToClipboard('E-posta', email),
                         ),
-                        _buildProfileTile(
-                          context,
+                        _buildTappableProfileTile(
                           label: 'Branş',
                           value: displaySubject,
                           icon: Icons.school_outlined,
+                          onTap: () => _showEditProfileDialog(
+                            displayName,
+                            displaySubject,
+                          ),
+                          trailing: const Icon(
+                            Icons.edit_outlined,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
                         ),
-                        _buildProfileTile(
-                          context,
+                        _buildTappableProfileTile(
                           label: 'Üyelik Durumu',
                           value: 'Aktif',
                           icon: Icons.verified_user_outlined,
+                          onTap: () => _showInfoDialog(
+                            'Üyelik Durumu',
+                            'Hesabınız aktif durumda. Tüm özelliklerden yararlanabilirsiniz.',
+                          ),
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: AppSizes.p24),
+
+                  // ── Uygulama Ayarları ──
                   Text(
                     'Uygulama Ayarları',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -314,7 +570,10 @@ class ProfileView extends ConsumerWidget {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: AppSizes.p24),
+
+                  // ── Veri Özeti ──
                   Text(
                     'Veri Özeti',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -329,28 +588,40 @@ class ProfileView extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildProfileTile(
-                          context,
+                        _buildTappableProfileTile(
                           label: 'Toplam Öğrenci',
                           value: studentCount.toString(),
                           icon: Icons.people_alt_rounded,
+                          onTap: () => _showInfoDialog(
+                            'Toplam Öğrenci',
+                            'Şu anda $studentCount kayıtlı öğrenciniz bulunmaktadır.',
+                          ),
                         ),
-                        _buildProfileTile(
-                          context,
+                        _buildTappableProfileTile(
                           label: 'Toplam Ders',
                           value: lessonCount.toString(),
                           icon: Icons.schedule_rounded,
+                          onTap: () => _showInfoDialog(
+                            'Toplam Ders',
+                            'Toplamda $lessonCount adet ders kaydınız bulunmaktadır.',
+                          ),
                         ),
-                        _buildProfileTile(
-                          context,
+                        _buildTappableProfileTile(
                           label: 'Toplam Kazanç',
                           value: AppHelpers.formatCurrency(totalEarnings),
                           icon: Icons.currency_lira_rounded,
+                          onTap: () => _showInfoDialog(
+                            'Toplam Kazanç',
+                            'Ödendi olarak işaretlenen derslerden toplam ${AppHelpers.formatCurrency(totalEarnings)} kazanç elde ettiniz.',
+                          ),
                         ),
                       ],
                     ),
                   ),
+
                   const SizedBox(height: AppSizes.p16),
+
+                  // ── Verileri Dışa Aktar ──
                   ElevatedButton.icon(
                     onPressed: () async {
                       studentsStream.when(
@@ -359,12 +630,7 @@ class ProfileView extends ConsumerWidget {
                             data: (lessons) {
                               paymentsStream.when(
                                 data: (payments) {
-                                  copyCsvData(
-                                    context,
-                                    students,
-                                    lessons,
-                                    payments,
-                                  );
+                                  _copyCsvData(students, lessons, payments);
                                 },
                                 loading: () {},
                                 error: (_, __) {},
@@ -390,7 +656,10 @@ class ProfileView extends ConsumerWidget {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: AppSizes.p24),
+
+                  // ── Hakkında ──
                   Text(
                     'Hakkında',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -399,45 +668,61 @@ class ProfileView extends ConsumerWidget {
                   ),
                   const SizedBox(height: AppSizes.p12),
                   _buildActionTile(
-                    context,
                     title: 'Kullanım Koşulları',
                     icon: Icons.gavel_outlined,
                     color: AppColors.primary,
                     onTap: () {
                       _showInfoDialog(
-                        context,
                         'Kullanım Koşulları',
-                        'Kullanım koşulları içeriği daha sonra eklenecektir.',
+                        'Bu uygulamayı kullanarak aşağıdaki koşulları kabul etmiş olursunuz:\n\n'
+                            '1. Uygulama eğitim amaçlı özel ders yönetimi için tasarlanmıştır.\n'
+                            '2. Kişisel verilerinizin güvenliği bizim için önemlidir.\n'
+                            '3. Uygulama içeriğinin izinsiz kopyalanması yasaktır.\n'
+                            '4. Hizmet kalitesini artırmak için anonim kullanım verileri toplanabilir.',
                       );
                     },
                   ),
                   _buildActionTile(
-                    context,
                     title: 'Gizlilik Politikası',
                     icon: Icons.privacy_tip_outlined,
                     color: AppColors.secondary,
                     onTap: () {
                       _showInfoDialog(
-                        context,
                         'Gizlilik Politikası',
-                        'Gizlilik politikası içeriği daha sonra eklenecektir.',
+                        'Gizlilik politikamız hakkında bilgilendirme:\n\n'
+                            '• Verileriniz Firebase altyapısında güvenle saklanır.\n'
+                            '• Kişisel bilgileriniz üçüncü taraflarla paylaşılmaz.\n'
+                            '• Hesap silme talebiniz halinde tüm verileriniz kalıcı olarak silinir.\n'
+                            '• Sorularınız için support@dershub.com adresinden bize ulaşabilirsiniz.',
                       );
                     },
                   ),
                   _buildActionTile(
-                    context,
                     title: 'Bize Ulaşın',
                     icon: Icons.mail_outline,
                     color: AppColors.primary,
                     onTap: () {
+                      _showContactDialog();
+                    },
+                  ),
+                  _buildActionTile(
+                    title: 'Uygulama Sürümü',
+                    icon: Icons.info_outline_rounded,
+                    color: AppColors.accent,
+                    onTap: () {
                       _showInfoDialog(
-                        context,
-                        'Bize Ulaşın',
-                        'support@dershub.com adresinden bize ulaşabilirsiniz.',
+                        'Uygulama Bilgileri',
+                        'DersHub v1.0.0\n\n'
+                            'Geliştirici: DersHub Ekibi\n'
+                            'Platform: Flutter / Firebase\n'
+                            '© 2026 DersHub. Tüm hakları saklıdır.',
                       );
                     },
                   ),
+
                   const SizedBox(height: AppSizes.p24),
+
+                  // ── Hesap ──
                   Text(
                     'Hesap',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -468,20 +753,22 @@ class ProfileView extends ConsumerWidget {
                               await ref
                                   .read(authServiceProvider)
                                   .resetPassword(userEmail);
-                              if (context.mounted) {
+                              if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
                                       'Şifre sıfırlama maili gönderildi.',
                                     ),
+                                    backgroundColor: AppColors.success,
                                   ),
                                 );
                               }
                             } catch (e) {
-                              if (context.mounted) {
+                              if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text('Hata: ${e.toString()}'),
+                                    backgroundColor: AppColors.error,
                                   ),
                                 );
                               }
@@ -499,7 +786,37 @@ class ProfileView extends ConsumerWidget {
                             size: 16,
                           ),
                           onTap: () async {
-                            await ref.read(authServiceProvider).signOut();
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppSizes.r24),
+                                ),
+                                title: const Text('Oturumu Kapat'),
+                                content: const Text(
+                                  'Hesabınızdan çıkış yapmak istediğinize emin misiniz?',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(ctx, false),
+                                    child: const Text('İptal'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(ctx, true),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                    child: const Text('Çıkış Yap'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              await ref.read(authServiceProvider).signOut();
+                            }
                           },
                         ),
                         ListTile(
@@ -512,9 +829,7 @@ class ProfileView extends ConsumerWidget {
                             Icons.arrow_forward_ios_rounded,
                             size: 16,
                           ),
-                          onTap: () {
-                            _showDeleteAccountDialog(context);
-                          },
+                          onTap: () => _showDeleteAccountDialog(),
                         ),
                       ],
                     ),
@@ -539,21 +854,30 @@ class ProfileView extends ConsumerWidget {
     );
   }
 
-  Widget _buildProfileTile(
-    BuildContext context, {
+  // ── Helper Widgets ──
+
+  Widget _buildTappableProfileTile({
     required String label,
     required String value,
     required IconData icon,
+    VoidCallback? onTap,
+    Widget? trailing,
   }) {
     return ListTile(
       leading: Icon(icon, color: AppColors.primary),
       title: Text(label),
       subtitle: Text(value),
+      trailing: trailing ??
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            size: 14,
+            color: Colors.grey,
+          ),
+      onTap: onTap,
     );
   }
 
-  Widget _buildActionTile(
-    BuildContext context, {
+  Widget _buildActionTile({
     required String title,
     required IconData icon,
     required Color color,
@@ -613,36 +937,83 @@ class ProfileView extends ConsumerWidget {
     );
   }
 
-  void _showInfoDialog(BuildContext context, String title, String message) {
+  void _showContactDialog() {
     showDialog<void>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Kapat'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showDeleteAccountDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Hesabı Sil'),
-          content: const Text(
-            'Hesap silme özelliği şu anda desteklenmiyor. Gelecekte eklenecektir.',
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.r24),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.mail_outline,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('Bize Ulaşın'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Sorularınız veya önerileriniz için bizimle iletişime geçebilirsiniz.',
+              ),
+              const SizedBox(height: AppSizes.p16),
+              InkWell(
+                onTap: () => _copyToClipboard(
+                  'E-posta',
+                  'support@dershub.com',
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.email_outlined,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'support@dershub.com',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.copy_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Kapat'),
             ),
           ],
