@@ -4,6 +4,8 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/constants.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/home/home_view.dart';
+import '../../features/home/parent_home_view.dart';
+import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
 
 class SplashScreen extends ConsumerWidget {
@@ -17,7 +19,11 @@ class SplashScreen extends ConsumerWidget {
       data: (user) {
         // Eğer kullanıcı oturum açmışsa ana ekrana yönlendir.
         if (user != null) {
-          return const HomeView();
+          if (user.role == UserRole.teacher) {
+            return const HomeView();
+          } else {
+            return const ParentHomeView();
+          }
         }
         // Oturum yoksa giriş ekranını göster.
         return const LoginScreen();
