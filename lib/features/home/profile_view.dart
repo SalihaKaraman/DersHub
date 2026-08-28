@@ -6,6 +6,7 @@ import '../../core/helpers.dart';
 import '../../models/lesson.dart';
 import '../../models/payment.dart';
 import '../../models/student.dart';
+import '../../models/teacher.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/settings_service.dart';
@@ -293,7 +294,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
     return authState.when(
       data: (teacher) {
         final displayName = teacher?.fullName ?? 'DersHub Öğretmeni';
-        final displaySubject = teacher?.subject ?? 'Genel Ders';
+        final displaySubject = teacher is Teacher ? (teacher.subject ?? 'Genel Ders') : 'Genel Ders';
         final email = teacher?.email ?? 'email@ornek.com';
 
         return Scaffold(
