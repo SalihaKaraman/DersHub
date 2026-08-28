@@ -3,19 +3,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/app_user.dart';
 import '../models/teacher.dart';
+import '../models/parent.dart';
+import '../models/user_role.dart';
 
 // Auth işlemleri için global loading durumunu takip eden provider.
 final authLoadingProvider = StateProvider<bool>((ref) => false);
 // Auth işlemlerinde oluşan hataları saklayan provider.
 final authErrorProvider = StateProvider<String?>((ref) => null);
 
-// Auth servisini sağlayan provider. Bu servis, uygulamadaki auth işlemlerini gerçekleştirir.
+// Auth servisini sağlayan provider.
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService(ref);
 });
 
-final authStateProvider = StreamProvider<Teacher?>((ref) {
+// Artık Teacher? yerine AppUser? dönüyor.
+final authStateProvider = StreamProvider<AppUser?>((ref) {
   final authService = ref.watch(authServiceProvider);
   return authService.authStateChanges;
 });
@@ -23,18 +27,16 @@ final authStateProvider = StreamProvider<Teacher?>((ref) {
 class AuthService {
   final Ref _ref;
   final fb.FirebaseAuth? _firebaseAuth;
-  final StreamController<Teacher?> _mockAuthStateController =
-      StreamController<Teacher?>.broadcast();
-  Teacher? _currentMockUser;
-  Teacher? _currentTeacher;
+  final StreamController<AppUser?> _mockAuthStateController =
+      StreamController<AppUser?>.broadcast();
+  AppUser? _currentMockUser;
+  AppUser? _currentUser;
   bool _useMockMode = false;
 
   AuthService(this._ref) : _firebaseAuth = _initFirebaseAuth() {
-    // Initialize mock mode when Firebase is unavailable (e.g. initialization failed or not configured)
     if (_firebaseAuth == null) {
       _useMockMode = true;
       _currentMockUser = null;
-      // Send the current mock user status when a subscriber starts listening
       _mockAuthStateController.onListen = () {
         _mockAuthStateController.add(_currentMockUser);
       };
@@ -51,62 +53,72 @@ class AuthService {
 
   bool get isMockMode => _useMockMode;
 
-  Stream<Teacher?> get authStateChanges {
+  Stream<AppUser?> get authStateChanges {
     if (_useMockMode) {
       return _mockAuthStateController.stream;
     } else {
       return _firebaseAuth!.authStateChanges().asyncMap((fbUser) async {
         if (fbUser == null) {
-          _currentTeacher = null;
+          _currentUser = null;
           return null;
         }
-
+        
         try {
-          final doc = await FirebaseFirestore.instance
+          // Önce öğretmen mi diye kontrol et
+          final teacherDoc = await FirebaseFirestore.instance
               .collection('teachers')
               .doc(fbUser.uid)
               .get();
-          if (doc.exists && doc.data() != null) {
-            final teacher = Teacher.fromMap(doc.data()!, doc.id);
-            _currentTeacher = teacher;
+          if (teacherDoc.exists && teacherDoc.data() != null) {
+            final teacher = Teacher.fromMap(teacherDoc.data()!, teacherDoc.id);
+            _currentUser = teacher;
             return teacher;
           }
+
+          // Öğretmen değilse veli mi diye kontrol et
+          final parentDoc = await FirebaseFirestore.instance
+              .collection('parents')
+              .doc(fbUser.uid)
+              .get();
+          if (parentDoc.exists && parentDoc.data() != null) {
+            final parent = Parent.fromMap(parentDoc.data()!, parentDoc.id);
+            _currentUser = parent;
+            return parent;
+          }
         } catch (e) {
-          debugPrint('Error loading teacher profile: $e');
+          debugPrint('Error loading user profile: $e');
         }
 
+        // Bulunamazsa varsayılan olarak öğretmen döndür (geriye dönük uyumluluk)
         final teacher = Teacher(
           id: fbUser.uid,
           email: fbUser.email ?? '',
           fullName: fbUser.displayName ?? 'Öğretmen',
           subject: 'Genel',
         );
-        _currentTeacher = teacher;
+        _currentUser = teacher;
         return teacher;
       });
     }
   }
 
-  Teacher? getCurrentUser() {
-    if (_useMockMode) {
-      return _currentMockUser;
-    }
-    if (_currentTeacher != null) {
-      return _currentTeacher;
-    }
-    final currentUser = _firebaseAuth?.currentUser;
-    if (currentUser != null) {
+  AppUser? getCurrentUser() {
+    if (_useMockMode) return _currentMockUser;
+    if (_currentUser != null) return _currentUser;
+    
+    final fbUser = _firebaseAuth?.currentUser;
+    if (fbUser != null) {
       return Teacher(
-        id: currentUser.uid,
-        email: currentUser.email ?? '',
-        fullName: currentUser.displayName ?? 'Öğretmen',
+        id: fbUser.uid,
+        email: fbUser.email ?? '',
+        fullName: fbUser.displayName ?? 'Öğretmen',
         subject: 'Genel',
       );
     }
     return null;
   }
 
-  Future<Teacher> signIn(String email, String password) async {
+  Future<AppUser> signIn(String email, String password) async {
     _ref.read(authLoadingProvider.notifier).state = true;
     _ref.read(authErrorProvider.notifier).state = null;
 
@@ -133,27 +145,36 @@ class AuthService {
       );
       final fbUser = credential.user!;
       
-      // Load from firestore
-      Teacher? teacher;
+      AppUser? appUser;
       try {
-        final doc = await FirebaseFirestore.instance
+        final teacherDoc = await FirebaseFirestore.instance
             .collection('teachers')
             .doc(fbUser.uid)
             .get();
-        if (doc.exists && doc.data() != null) {
-          teacher = Teacher.fromMap(doc.data()!, doc.id);
-          _currentTeacher = teacher;
+        if (teacherDoc.exists && teacherDoc.data() != null) {
+          appUser = Teacher.fromMap(teacherDoc.data()!, teacherDoc.id);
+        } else {
+          final parentDoc = await FirebaseFirestore.instance
+              .collection('parents')
+              .doc(fbUser.uid)
+              .get();
+          if (parentDoc.exists && parentDoc.data() != null) {
+            appUser = Parent.fromMap(parentDoc.data()!, parentDoc.id);
+          }
         }
       } catch (e) {
-        debugPrint('Error fetching teacher profile on sign-in: $e');
+        debugPrint('Error fetching user profile on sign-in: $e');
       }
 
-      return teacher ?? Teacher(
+      final finalUser = appUser ?? Teacher(
         id: fbUser.uid,
         email: fbUser.email ?? '',
         fullName: fbUser.displayName ?? 'Öğretmen',
         subject: 'Genel',
       );
+      
+      _currentUser = finalUser;
+      return finalUser;
     } catch (e) {
       _ref.read(authErrorProvider.notifier).state = e.toString();
       rethrow;
@@ -162,11 +183,13 @@ class AuthService {
     }
   }
 
-  Future<Teacher> signUp(
-    String email,
-    String password, {
-    String fullName = 'Öğretmen',
-    String subject = 'Genel',
+  Future<AppUser> signUp({
+    required String email,
+    required String password,
+    required String fullName,
+    required UserRole role,
+    String? subject,
+    String? phone,
   }) async {
     _ref.read(authLoadingProvider.notifier).state = true;
     _ref.read(authErrorProvider.notifier).state = null;
@@ -174,12 +197,25 @@ class AuthService {
     try {
       if (_useMockMode) {
         await Future.delayed(const Duration(milliseconds: 1000));
-        final user = Teacher(
-          id: 'mock_teacher_id',
-          email: email,
-          fullName: fullName,
-          subject: subject,
-        );
+        AppUser user;
+        if (role == UserRole.teacher) {
+          user = Teacher(
+            id: 'mock_teacher_id',
+            email: email,
+            fullName: fullName,
+            subject: subject ?? 'Genel',
+          );
+        } else {
+          user = Parent(
+            id: 'mock_parent_id',
+            email: email,
+            fullName: fullName,
+            phone: phone ?? '',
+            linkedStudentIds: [],
+            linkedTeacherIds: [],
+            createdAt: DateTime.now(),
+          );
+        }
         _currentMockUser = user;
         _mockAuthStateController.add(user);
         return user;
@@ -192,21 +228,48 @@ class AuthService {
       final fbUser = credential.user!;
       await fbUser.updateDisplayName(fullName);
 
-      // Create new Teacher document in Firestore
-      final newTeacher = Teacher(
-        id: fbUser.uid,
-        email: fbUser.email ?? email,
-        fullName: fullName,
-        subject: subject,
-      );
+      AppUser newUser;
+      
+      if (role == UserRole.teacher) {
+        final teacher = Teacher(
+          id: fbUser.uid,
+          email: fbUser.email ?? email,
+          fullName: fullName,
+          subject: subject ?? 'Genel',
+        );
+        await FirebaseFirestore.instance
+            .collection('teachers')
+            .doc(fbUser.uid)
+            .set(teacher.toMap());
+        newUser = teacher;
+      } else {
+        final parent = Parent(
+          id: fbUser.uid,
+          email: fbUser.email ?? email,
+          fullName: fullName,
+          phone: phone ?? '',
+          linkedStudentIds: [],
+          linkedTeacherIds: [],
+          createdAt: DateTime.now(),
+        );
+        await FirebaseFirestore.instance
+            .collection('parents')
+            .doc(fbUser.uid)
+            .set(parent.toMap());
+        newUser = parent;
+      }
 
+      // Ayrıca ileride sorguları kolaylaştırmak için users koleksiyonuna role bilgisi atalım
       await FirebaseFirestore.instance
-          .collection('teachers')
+          .collection('users')
           .doc(fbUser.uid)
-          .set(newTeacher.toMap());
+          .set({
+        'role': role.name,
+        'email': email,
+      }, SetOptions(merge: true));
 
-      _currentTeacher = newTeacher;
-      return newTeacher;
+      _currentUser = newUser;
+      return newUser;
     } catch (e) {
       _ref.read(authErrorProvider.notifier).state = e.toString();
       rethrow;
@@ -218,7 +281,6 @@ class AuthService {
   Future<void> resetPassword(String email) async {
     _ref.read(authLoadingProvider.notifier).state = true;
     _ref.read(authErrorProvider.notifier).state = null;
-
     try {
       if (_useMockMode) {
         await Future.delayed(const Duration(milliseconds: 800));
@@ -236,7 +298,6 @@ class AuthService {
   Future<void> signOut() async {
     _ref.read(authLoadingProvider.notifier).state = true;
     _ref.read(authErrorProvider.notifier).state = null;
-
     try {
       if (_useMockMode) {
         await Future.delayed(const Duration(milliseconds: 500));
@@ -259,12 +320,11 @@ class AuthService {
   }) async {
     _ref.read(authLoadingProvider.notifier).state = true;
     _ref.read(authErrorProvider.notifier).state = null;
-
     try {
       if (_useMockMode) {
         await Future.delayed(const Duration(milliseconds: 500));
-        if (_currentMockUser != null) {
-          _currentMockUser = _currentMockUser!.copyWith(
+        if (_currentMockUser is Teacher) {
+          _currentMockUser = (_currentMockUser as Teacher).copyWith(
             fullName: fullName,
             subject: subject,
           );
@@ -272,12 +332,10 @@ class AuthService {
         }
         return;
       }
-
       final fbUser = _firebaseAuth!.currentUser;
       if (fbUser == null) throw Exception('Kullanıcı oturumu bulunamadı.');
 
       await fbUser.updateDisplayName(fullName);
-
       await FirebaseFirestore.instance
           .collection('teachers')
           .doc(fbUser.uid)
@@ -287,13 +345,12 @@ class AuthService {
         'email': fbUser.email ?? '',
       }, SetOptions(merge: true));
 
-      _currentTeacher = _currentTeacher?.copyWith(
-        fullName: fullName,
-        subject: subject,
-      );
-      // Re-emit so listeners pick up the update
-      if (_currentTeacher != null) {
-        _mockAuthStateController.add(_currentTeacher);
+      if (_currentUser is Teacher) {
+        _currentUser = (_currentUser as Teacher).copyWith(
+          fullName: fullName,
+          subject: subject,
+        );
+        _mockAuthStateController.add(_currentUser);
       }
     } catch (e) {
       _ref.read(authErrorProvider.notifier).state = e.toString();
@@ -306,7 +363,6 @@ class AuthService {
   Future<void> deleteAccount() async {
     _ref.read(authLoadingProvider.notifier).state = true;
     _ref.read(authErrorProvider.notifier).state = null;
-
     try {
       if (_useMockMode) {
         await Future.delayed(const Duration(milliseconds: 800));
@@ -318,15 +374,15 @@ class AuthService {
       final fbUser = _firebaseAuth!.currentUser;
       if (fbUser == null) throw Exception('Kullanıcı oturumu bulunamadı.');
 
-      // Delete teacher document from Firestore
-      await FirebaseFirestore.instance
-          .collection('teachers')
-          .doc(fbUser.uid)
-          .delete();
+      if (_currentUser is Teacher) {
+        await FirebaseFirestore.instance.collection('teachers').doc(fbUser.uid).delete();
+      } else if (_currentUser is Parent) {
+        await FirebaseFirestore.instance.collection('parents').doc(fbUser.uid).delete();
+      }
+      await FirebaseFirestore.instance.collection('users').doc(fbUser.uid).delete();
 
-      // Delete the Firebase Auth account
       await fbUser.delete();
-      _currentTeacher = null;
+      _currentUser = null;
     } catch (e) {
       _ref.read(authErrorProvider.notifier).state = e.toString();
       rethrow;
