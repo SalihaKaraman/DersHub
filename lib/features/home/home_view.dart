@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/teacher.dart';
 import '../../core/constants.dart';
 import '../../services/auth_service.dart';
 
@@ -34,7 +35,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
     // Load active teacher name
     final teacherName = authState.value?.fullName ?? 'Öğretmen';
-    final teacherSubject = authState.value?.subject ?? 'Branş Tanımsız';
+    final teacherSubject = authState.value is Teacher 
+        ? (authState.value as Teacher).subject ?? 'Branş Tanımsız'
+        : 'Branş Tanımsız';
 
     return Scaffold(
       appBar: AppBar(
