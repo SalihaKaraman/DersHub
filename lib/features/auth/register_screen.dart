@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../../core/constants.dart';
 import '../../core/helpers.dart';
+import '../../models/user_role.dart';
 import '../../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -17,9 +18,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _subjectController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _passwordConfirmController = TextEditingController();
+  
+  UserRole _selectedRole = UserRole.teacher;
   bool _acceptTerms = false;
   bool _isLoading = false;
   String? _errorMessage;
@@ -28,6 +32,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _fullNameController.dispose();
     _subjectController.dispose();
+    _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _passwordConfirmController.dispose();
@@ -52,11 +57,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref
           .read(authServiceProvider)
           .signUp(
-            _emailController.text.trim(),
-            _passwordController.text,
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
             fullName: _fullNameController.text.trim(),
-            subject: _subjectController.text.trim(),
+            role: _selectedRole,
+            subject: _selectedRole == UserRole.teacher ? _subjectController.text.trim() : null,
+            phone: _selectedRole == UserRole.parent ? _phoneController.text.trim() : null,
           );
+      // Kayıt başarılıysa splash/home ekranına yönlendirme state provider üzerinden otomatik olur
     } catch (e) {
       setState(() {
         _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -133,6 +141,36 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                           const SizedBox(height: AppSizes.p20),
                         ],
+                        
+                        // Rol Seçici
+                        Row(
+                          children: [
+                            Expanded(
+                              child: RadioListTile<UserRole>(
+                                title: const Text('Öğretmen'),
+                                value: UserRole.teacher,
+                                groupValue: _selectedRole,
+                                contentPadding: EdgeInsets.zero,
+                                onChanged: (value) {
+                                  if (value != null) setState(() => _selectedRole = value);
+                                },
+                              ),
+                            ),
+                            Expanded(
+                              child: RadioListTile<UserRole>(
+                                title: const Text('Veli'),
+                                value: UserRole.parent,
+                                groupValue: _selectedRole,
+                                contentPadding: EdgeInsets.zero,
+                                onChanged: (value) {
+                                  if (value != null) setState(() => _selectedRole = value);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSizes.p16),
+                        
                         TextFormField(
                           controller: _fullNameController,
                           decoration: const InputDecoration(
@@ -143,15 +181,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               AppHelpers.validateRequired(value, 'Ad Soyad'),
                         ),
                         const SizedBox(height: AppSizes.p16),
-                        TextFormField(
-                          controller: _subjectController,
-                          decoration: const InputDecoration(
-                            hintText: 'Ders Branşı (örn: Matematik, Fizik)',
-                            prefixIcon: Icon(Icons.school_outlined),
+                        
+                        if (_selectedRole == UserRole.teacher)
+                          TextFormField(
+                            controller: _subjectController,
+                            decoration: const InputDecoration(
+                              hintText: 'Ders Branşı (örn: Matematik, Fizik)',
+                              prefixIcon: Icon(Icons.school_outlined),
+                            ),
+                            validator: (value) =>
+                                AppHelpers.validateRequired(value, 'Ders Branşı'),
                           ),
-                          validator: (value) =>
-                              AppHelpers.validateRequired(value, 'Ders Branşı'),
-                        ),
+                          
+                        if (_selectedRole == UserRole.parent)
+                          TextFormField(
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              hintText: 'Telefon Numarası',
+                              prefixIcon: Icon(Icons.phone_outlined),
+                            ),
+                            validator: (value) =>
+                                AppHelpers.validateRequired(value, 'Telefon'),
+                          ),
+                          
                         const SizedBox(height: AppSizes.p16),
                         TextFormField(
                           controller: _emailController,
