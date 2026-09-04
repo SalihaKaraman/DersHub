@@ -5,8 +5,11 @@ import '../../core/helpers.dart';
 import '../../models/student.dart';
 import '../../models/lesson.dart';
 import '../../models/note.dart';
+import '../../models/group_lesson.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/group_lesson_service.dart';
+import '../calendar/group_lesson_detail_dialog.dart';
 import '../reports/reports_list_view.dart';
 
 class StudentDetailView extends ConsumerStatefulWidget {
@@ -194,6 +197,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
         : AppColors.warning;
 
     final lessonsAsync = ref.watch(lessonsStreamProvider);
+    final groupLessonsAsync =
+        ref.watch(studentGroupLessonsStreamProvider(widget.student.id));
     final paymentsAsync = ref.watch(paymentsStreamProvider);
     final notesAsync = ref.watch(notesStreamProvider);
 
@@ -401,15 +406,31 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
               ),
             ),
 
-            // Ders Geçmişi
+            // Ders Geçmişi (Bireysel + Grup Dersleri)
             lessonsAsync.when(
               data: (lessons) {
-                final items = lessons
+                final studentLessons = lessons
                     .where((l) => (l).studentId == widget.student.id)
                     .toList();
+                final studentGroupLessons = groupLessonsAsync.value ?? [];
+
+                final allStudentLessons = <dynamic>[
+                  ...studentLessons,
+                  ...studentGroupLessons,
+                ];
+                allStudentLessons.sort((a, b) {
+                  final DateTime aDate = a is Lesson
+                      ? a.dateTime
+                      : (a as GroupLesson).dateTime;
+                  final DateTime bDate = b is Lesson
+                      ? b.dateTime
+                      : (b as GroupLesson).dateTime;
+                  return bDate.compareTo(aDate);
+                });
+
                 return Stack(
                   children: [
-                    items.isEmpty
+                    allStudentLessons.isEmpty
                         ? const Center(child: Text('Henüz ders yok.'))
                         : ListView.separated(
                             padding: const EdgeInsets.fromLTRB(
@@ -418,11 +439,80 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               AppSizes.p16,
                               80,
                             ),
-                            itemCount: items.length,
+                            itemCount: allStudentLessons.length,
                             separatorBuilder: (_, __) =>
                                 const SizedBox(height: AppSizes.p12),
                             itemBuilder: (context, i) {
-                              final Lesson lesson = items[i];
+                              final item = allStudentLessons[i];
+                              if (item is GroupLesson) {
+                                return Card(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppSizes.r16,
+                                    ),
+                                    side: BorderSide(
+                                      color: AppColors.primary.withAlpha(50),
+                                    ),
+                                  ),
+                                  child: ListTile(
+                                    onTap: () =>
+                                        GroupLessonDetailDialog.show(context, item),
+                                    leading: CircleAvatar(
+                                      backgroundColor:
+                                          AppColors.primary.withAlpha(25),
+                                      child: const Icon(
+                                        Icons.groups_rounded,
+                                        color: AppColors.primary,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item.topic,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary.withAlpha(25),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: const Text(
+                                            'GRUP',
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      '${_formatDate(item.dateTime)} · ${item.durationMinutes} dk · ${item.groupName}',
+                                    ),
+                                    trailing: Icon(
+                                      item.isCompleted
+                                          ? Icons.check_circle
+                                          : Icons.schedule,
+                                      color: item.isCompleted
+                                          ? AppColors.success
+                                          : AppColors.textSecondaryDark,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final Lesson lesson = item as Lesson;
                               return Card(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
