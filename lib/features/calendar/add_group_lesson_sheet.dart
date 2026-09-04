@@ -4,7 +4,6 @@ import '../../core/constants.dart';
 import '../../core/helpers.dart';
 import '../../models/group_lesson.dart';
 import '../../models/student.dart';
-import '../../models/teacher.dart';
 import '../../services/auth_service.dart';
 import '../../services/group_lesson_service.dart';
 
@@ -181,10 +180,6 @@ class _AddGroupLessonSheetState extends ConsumerState<AddGroupLessonSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final user = ref.watch(authServiceProvider).getCurrentUser();
-    final defaultSubject = user is Teacher && user.subject?.isNotEmpty == true
-        ? user.subject!
-        : 'Matematik';
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
