@@ -7,6 +7,7 @@ import '../../models/lesson.dart';
 import '../../models/note.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../reports/reports_list_view.dart';
 
 class StudentDetailView extends ConsumerStatefulWidget {
   final Student student;
@@ -197,16 +198,19 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     final notesAsync = ref.watch(notesStreamProvider);
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.student.nickname),
           bottom: const TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             tabs: [
               Tab(text: 'Genel'),
               Tab(text: 'Dersler'),
               Tab(text: 'Ödemeler'),
               Tab(text: 'Notlar'),
+              Tab(text: 'Raporlar & Sertifikalar'),
             ],
           ),
         ),
@@ -345,7 +349,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                   Switch(
                                     value: widget.student.isActive,
                                     onChanged: (v) => _toggleActive(v),
-                                    activeColor: Colors.white,
+                                    activeThumbColor: Colors.white,
                                     activeTrackColor: AppColors.success,
                                     inactiveThumbColor: Colors.grey.shade400,
                                     inactiveTrackColor: Colors.white24,
@@ -615,6 +619,24 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
               error: (e, st) => Center(
                 child: Text('Notlar yüklenirken hata: ${e.toString()}'),
               ),
+            ),
+
+            // 5. Raporlar & Sertifikalar
+            lessonsAsync.when(
+              data: (allLessons) {
+                final studentLessons = allLessons
+                    .where((l) => l.studentId == widget.student.id)
+                    .toList();
+                return ReportsListView(
+                  student: widget.student,
+                  lessons: studentLessons,
+                  isTeacher: true,
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (e, _) => Center(child: Text('Ders bilgisi alınamadı: $e')),
             ),
           ],
         ),

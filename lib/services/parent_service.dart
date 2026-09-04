@@ -5,6 +5,7 @@ import '../models/lesson.dart';
 import '../models/parent.dart';
 import '../models/app_user.dart';
 import 'auth_service.dart';
+import 'database_service.dart';
 
 /// Velinin bağlı olduğu öğrencileri ve derslerini yöneten servis.
 final parentServiceProvider = Provider<ParentService>((ref) {
@@ -46,15 +47,25 @@ class ParentService {
 
   /// Velinin bağlı olduğu öğrencileri döndürür.
   Stream<List<Student>> getLinkedStudentsStream() {
-    if (_firestore == null) return Stream.value([]);
+    if (_firestore == null || _ref.read(authServiceProvider).isMockMode) {
+      final parent = _getCurrentParent();
+      final linkedIds = parent?.linkedStudentIds.isNotEmpty == true
+          ? parent!.linkedStudentIds
+          : ['s1', 's2'];
+      return _ref.watch(databaseServiceProvider).getStudentsStream().map(
+            (students) =>
+                students.where((s) => linkedIds.contains(s.id)).toList(),
+          );
+    }
 
     final parent = _getCurrentParent();
     if (parent == null || parent.linkedStudentIds.isEmpty) {
       return Stream.value([]);
     }
 
-    final db = _firestore!;
-    return db.collection('students')
+    final db = _firestore;
+    return db
+        .collection('students')
         .where(FieldPath.documentId, whereIn: parent.linkedStudentIds)
         .snapshots()
         .map((snap) => snap.docs
@@ -64,10 +75,16 @@ class ParentService {
 
   /// Belirli bir öğrencinin derslerini döndürür (READ ONLY).
   Stream<List<Lesson>> getStudentLessonsStream(String studentId) {
-    if (_firestore == null) return Stream.value([]);
+    if (_firestore == null || _ref.read(authServiceProvider).isMockMode) {
+      return _ref.watch(databaseServiceProvider).getLessonsStream().map(
+            (lessons) =>
+                lessons.where((l) => l.studentId == studentId).toList(),
+          );
+    }
 
-    final db = _firestore!;
-    return db.collection('lessons')
+    final db = _firestore;
+    return db
+        .collection('lessons')
         .where('studentId', isEqualTo: studentId)
         .orderBy('dateTime', descending: true)
         .snapshots()
@@ -78,7 +95,13 @@ class ParentService {
 
   /// Öğrenciye bağlı öğretmenin bilgilerini getirir.
   Future<Map<String, dynamic>?> getTeacherInfo(String teacherId) async {
-    if (_firestore == null) return null;
+    if (_firestore == null) {
+      return {
+        'fullName': 'Saliha Öğretmen',
+        'subject': 'Matematik & Fen Bilimleri',
+        'email': 'ogretmen@dershub.com',
+      };
+    }
     try {
       final doc = await _firestore.collection('teachers').doc(teacherId).get();
       return doc.data();

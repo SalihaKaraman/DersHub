@@ -5,6 +5,7 @@ import '../../core/constants.dart';
 import '../../models/lesson.dart';
 import '../../models/student.dart';
 import '../../services/parent_service.dart';
+import '../reports/reports_list_view.dart';
 
 class ParentStudentDetailView extends ConsumerStatefulWidget {
   final Student student;
@@ -23,7 +24,7 @@ class _ParentStudentDetailViewState
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -107,10 +108,13 @@ class _ParentStudentDetailViewState
               indicatorColor: Colors.white,
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white60,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               tabs: const [
                 Tab(text: 'Dersler'),
                 Tab(text: 'İlerleme'),
                 Tab(text: 'Öğretmen Notları'),
+                Tab(text: 'Raporlar & Sertifikalar'),
               ],
             ),
           ),
@@ -124,6 +128,11 @@ class _ParentStudentDetailViewState
               _LessonsTab(lessons: lessonList),
               _ProgressTab(lessons: lessonList, student: widget.student),
               _NotesTab(lessons: lessonList),
+              ReportsListView(
+                student: widget.student,
+                lessons: lessonList,
+                isTeacher: false,
+              ),
             ],
           ),
         ),
