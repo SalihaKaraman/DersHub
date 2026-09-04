@@ -6,10 +6,37 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../core/constants.dart';
 import '../../core/helpers.dart';
 import '../../models/lesson.dart';
+import '../../models/group_lesson.dart';
 import '../../models/student.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
+import '../../services/group_lesson_service.dart';
 import '../../services/notification_service.dart';
+import 'add_group_lesson_sheet.dart';
+import 'group_lesson_detail_dialog.dart';
+
+sealed class CalendarEventItem {
+  DateTime get dateTime;
+  bool get isCompleted;
+}
+
+class SingleLessonEvent extends CalendarEventItem {
+  final Lesson lesson;
+  SingleLessonEvent(this.lesson);
+  @override
+  DateTime get dateTime => lesson.dateTime;
+  @override
+  bool get isCompleted => lesson.isCompleted;
+}
+
+class GroupLessonEvent extends CalendarEventItem {
+  final GroupLesson groupLesson;
+  GroupLessonEvent(this.groupLesson);
+  @override
+  DateTime get dateTime => groupLesson.dateTime;
+  @override
+  bool get isCompleted => groupLesson.isCompleted;
+}
 
 class CalendarView extends ConsumerStatefulWidget {
   const CalendarView({super.key});
@@ -37,15 +64,29 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddLessonSheet(students: students),
+      builder: (context) => _LessonTypeChoiceSheet(
+        onSelectIndividual: () {
+          Navigator.pop(context);
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => AddLessonSheet(students: students),
+          );
+        },
+        onSelectGroup: () {
+          Navigator.pop(context);
+          AddGroupLessonSheet.show(context, students);
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final lessonsAsync = ref.watch(lessonsStreamProvider);
+    final groupLessonsAsync = ref.watch(groupLessonsStreamProvider);
     final studentsAsync = ref.watch(studentsStreamProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -67,8 +108,15 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         ],
       ),
       body: lessonsAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+        error: (err, stack) =>
+            Center(child: Text('Hata oluştu: ${err.toString()}')),
         data: (lessons) {
-          if (lessons.isEmpty) {
+          final groupLessons = groupLessonsAsync.value ?? [];
+
+          if (lessons.isEmpty && groupLessons.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -92,17 +140,23 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
             );
           }
 
-          final events = <DateTime, List<Lesson>>{};
-          for (final lesson in lessons) {
+          final allEvents = <CalendarEventItem>[
+            ...lessons.map((l) => SingleLessonEvent(l)),
+            ...groupLessons.map((gl) => GroupLessonEvent(gl)),
+          ];
+          allEvents.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
+          final events = <DateTime, List<CalendarEventItem>>{};
+          for (final event in allEvents) {
             final dateKey = DateTime(
-              lesson.dateTime.year,
-              lesson.dateTime.month,
-              lesson.dateTime.day,
+              event.dateTime.year,
+              event.dateTime.month,
+              event.dateTime.day,
             );
-            events.putIfAbsent(dateKey, () => []).add(lesson);
+            events.putIfAbsent(dateKey, () => []).add(event);
           }
 
-          List<Lesson> getEventsForDay(DateTime day) {
+          List<CalendarEventItem> getEventsForDay(DateTime day) {
             final dateKey = DateTime(day.year, day.month, day.day);
             return events[dateKey] ?? [];
           }
@@ -112,7 +166,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
 
           return Column(
             children: [
-              TableCalendar<Lesson>(
+              TableCalendar<CalendarEventItem>(
                 firstDay: DateTime.now().subtract(const Duration(days: 365)),
                 lastDay: DateTime.now().add(const Duration(days: 365)),
                 focusedDay: _focusedDay,
@@ -126,11 +180,11 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                     color: AppColors.primary.withValues(alpha: 0.16),
                     shape: BoxShape.circle,
                   ),
-                  selectedDecoration: BoxDecoration(
+                  selectedDecoration: const BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
-                  markerDecoration: BoxDecoration(
+                  markerDecoration: const BoxDecoration(
                     color: AppColors.secondary,
                     shape: BoxShape.circle,
                   ),
@@ -150,7 +204,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                   horizontal: AppSizes.p16,
                   vertical: AppSizes.p12,
                 ),
-                child: _buildWeeklySummary(lessons, selectedDay),
+                child: _buildWeeklySummary(lessons, groupLessons, selectedDay),
               ),
               Expanded(
                 child: selectedEvents.isEmpty
@@ -170,21 +224,25 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                         separatorBuilder: (_, __) =>
                             const SizedBox(height: AppSizes.p12),
                         itemBuilder: (context, index) {
-                          return _buildLessonTile(
-                            context,
-                            selectedEvents[index],
-                          );
+                          final eventItem = selectedEvents[index];
+                          if (eventItem is SingleLessonEvent) {
+                            return _buildLessonTile(
+                              context,
+                              eventItem.lesson,
+                            );
+                          } else if (eventItem is GroupLessonEvent) {
+                            return _buildGroupLessonTile(
+                              context,
+                              eventItem.groupLesson,
+                            );
+                          }
+                          return const SizedBox.shrink();
                         },
                       ),
               ),
             ],
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-        error: (err, stack) =>
-            Center(child: Text('Hata oluştu: ${err.toString()}')),
       ),
       floatingActionButton: studentsAsync.when(
         data: (students) => FloatingActionButton.extended(
@@ -222,6 +280,105 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           style: theme.textTheme.titleMedium?.copyWith(
             color: isPast ? Colors.grey : AppColors.primary,
             fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupLessonTile(
+    BuildContext context,
+    GroupLesson groupLesson,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isPast = groupLesson.dateTime.isBefore(DateTime.now());
+
+    return Card(
+      color: isPast ? (isDark ? Colors.white10 : Colors.grey.shade100) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.r16),
+        side: BorderSide(
+          color: AppColors.primary.withAlpha(isDark ? 80 : 50),
+          width: 1.2,
+        ),
+      ),
+      child: InkWell(
+        onTap: () => GroupLessonDetailDialog.show(context, groupLesson),
+        borderRadius: BorderRadius.circular(AppSizes.r16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withAlpha(25),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.groups_rounded,
+                          size: 14,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'GRUP DERSİ (${groupLesson.studentIds.length} Öğrenci)',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    AppHelpers.formatCurrency(groupLesson.totalPrice),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: isPast ? Colors.grey : AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                groupLesson.groupName,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${AppHelpers.formatTime(groupLesson.dateTime)} · ${groupLesson.durationMinutes} dk · ${groupLesson.topic}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark
+                      ? AppColors.textSecondaryDark
+                      : AppColors.textSecondaryLight,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Katılımcılar: ${groupLesson.studentNames.join(", ")}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondaryLight,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
         ),
       ),
@@ -282,17 +439,30 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     );
   }
 
-  Widget _buildWeeklySummary(List<Lesson> lessons, DateTime selectedDay) {
+  Widget _buildWeeklySummary(
+    List<Lesson> lessons,
+    List<GroupLesson> groupLessons,
+    DateTime selectedDay,
+  ) {
     final startOfWeek = selectedDay.subtract(
       Duration(days: selectedDay.weekday - 1),
     );
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
     double total = 0;
     int count = 0;
+
     for (final lesson in lessons) {
       if (!lesson.dateTime.isBefore(startOfWeek) &&
           !lesson.dateTime.isAfter(endOfWeek)) {
         total += lesson.price;
+        count++;
+      }
+    }
+
+    for (final gl in groupLessons) {
+      if (!gl.dateTime.isBefore(startOfWeek) &&
+          !gl.dateTime.isAfter(endOfWeek)) {
+        total += gl.totalPrice;
         count++;
       }
     }
@@ -657,6 +827,146 @@ class _AddLessonSheetState extends ConsumerState<AddLessonSheet> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LessonTypeChoiceSheet extends StatelessWidget {
+  final VoidCallback onSelectIndividual;
+  final VoidCallback onSelectGroup;
+
+  const _LessonTypeChoiceSheet({
+    required this.onSelectIndividual,
+    required this.onSelectGroup,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.p20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppSizes.r24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              width: 44,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withAlpha(80),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text(
+            'Ders Türü Seçin',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Planlamak istediğiniz ders formatını seçin:',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondaryLight,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _choiceCard(
+            context,
+            icon: Icons.person_rounded,
+            title: 'Bireysel Özel Ders',
+            subtitle: 'Tek bir öğrenci ile birebir ders planlayın',
+            color: AppColors.primary,
+            onTap: onSelectIndividual,
+          ),
+          const SizedBox(height: 12),
+          _choiceCard(
+            context,
+            icon: Icons.groups_rounded,
+            title: 'Grup Dersi / Etüt',
+            subtitle:
+                'Birden fazla öğrenciyle ortak sınıf veya etüt dersi planlayın',
+            color: AppColors.secondary,
+            onTap: onSelectGroup,
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _choiceCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.r16),
+        side: BorderSide(color: color.withAlpha(80), width: 1.5),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSizes.r16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 26),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondaryLight,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: Colors.grey,
+              ),
+            ],
           ),
         ),
       ),
