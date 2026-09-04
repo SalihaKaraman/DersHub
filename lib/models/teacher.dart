@@ -2,8 +2,11 @@ import 'app_user.dart';
 import 'user_role.dart';
 
 class Teacher implements AppUser {
+  @override
   final String id;
+  @override
   final String email;
+  @override
   final String fullName;
   final String? subject;
   final List<String> parentContacts;
