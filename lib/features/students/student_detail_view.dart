@@ -11,6 +11,8 @@ import '../../services/auth_service.dart';
 import '../../services/group_lesson_service.dart';
 import '../calendar/group_lesson_detail_dialog.dart';
 import '../reports/reports_list_view.dart';
+import '../../services/messaging_service.dart';
+import '../../services/messaging_service.dart';
 
 class StudentDetailView extends ConsumerStatefulWidget {
   final Student student;
@@ -189,6 +191,188 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     await ref.read(databaseServiceProvider).addNote(note);
   }
 
+  Future<void> _showMessageDialog() async {
+    final messageController = TextEditingController();
+    String? phone = widget.student.phoneNumber;
+
+    if (phone == null || phone.isEmpty) {
+      final phoneController = TextEditingController();
+      final phoneRes = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Telefon Numarası Eksik'),
+          content: TextField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(hintText: '+90 555 123 45 67'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('İptal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Kaydet'),
+            ),
+          ],
+        ),
+      );
+
+      if (phoneRes == true && phoneController.text.trim().isNotEmpty) {
+        phone = phoneController.text.trim();
+        final updated = widget.student.copyWith(phoneNumber: phone);
+        await ref.read(databaseServiceProvider).updateStudent(updated);
+      } else {
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mesaj Gönder'),
+        content: TextField(
+          controller: messageController,
+          maxLines: 3,
+          decoration: const InputDecoration(hintText: 'Mesajınız...'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'sms'),
+            child: const Text('SMS Uygulaması (Cihaz)'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'wa'),
+            child: const Text('WhatsApp (Cihaz)'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'twilio_wa'),
+            child: const Text('Twilio WhatsApp', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null || messageController.text.trim().isEmpty) return;
+
+    final msg = messageController.text.trim();
+    final messaging = ref.read(messagingServiceProvider);
+
+    if (result == 'wa') {
+      await messaging.launchWhatsAppApp(to: phone!, message: msg);
+    } else if (result == 'sms') {
+      await messaging.launchSmsApp(to: phone!, message: msg);
+    } else if (result == 'twilio_wa') {
+      final success = await messaging.sendWhatsAppViaTwilio(to: phone!, message: msg);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Mesaj gönderildi!' : 'Mesaj gönderilemedi.'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showMessageDialog() async {
+    final messageController = TextEditingController();
+    String? phone = widget.student.phoneNumber;
+
+    if (phone == null || phone.isEmpty) {
+      final phoneController = TextEditingController();
+      final phoneRes = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Telefon Numarası Eksik'),
+          content: TextField(
+            controller: phoneController,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(hintText: '+90 555 123 45 67'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('İptal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Kaydet'),
+            ),
+          ],
+        ),
+      );
+
+      if (phoneRes == true && phoneController.text.trim().isNotEmpty) {
+        phone = phoneController.text.trim();
+        final updated = widget.student.copyWith(phoneNumber: phone);
+        await ref.read(databaseServiceProvider).updateStudent(updated);
+      } else {
+        return;
+      }
+    }
+
+    if (!mounted) return;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mesaj Gönder'),
+        content: TextField(
+          controller: messageController,
+          maxLines: 3,
+          decoration: const InputDecoration(hintText: 'Mesajınız...'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'sms'),
+            child: const Text('SMS Uygulaması (Cihaz)'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'wa'),
+            child: const Text('WhatsApp (Cihaz)'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'twilio_wa'),
+            child: const Text('Twilio WhatsApp', style: TextStyle(color: AppColors.primary)),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null || messageController.text.trim().isEmpty) return;
+
+    final msg = messageController.text.trim();
+    final messaging = ref.read(messagingServiceProvider);
+
+    if (result == 'wa') {
+      await messaging.launchWhatsAppApp(to: phone!, message: msg);
+    } else if (result == 'sms') {
+      await messaging.launchSmsApp(to: phone!, message: msg);
+    } else if (result == 'twilio_wa') {
+      final success = await messaging.sendWhatsAppViaTwilio(to: phone!, message: msg);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Mesaj gönderildi!' : 'Mesaj gönderilemedi.'),
+            backgroundColor: success ? AppColors.success : AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -292,6 +476,13 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                     },
                                     icon: const Icon(
                                       Icons.edit,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: _showMessageDialog,
+                                    icon: const Icon(
+                                      Icons.message,
                                       color: Colors.white,
                                     ),
                                   ),

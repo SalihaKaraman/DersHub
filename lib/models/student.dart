@@ -14,6 +14,7 @@ class Student with _$Student {
     required double hourlyRate,
     required DateTime createdAt,
     required bool isActive,
+    String? phoneNumber,
   }) = _Student;
 
   const Student._();
