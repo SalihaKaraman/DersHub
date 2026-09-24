@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../core/constants.dart';
 import '../../core/helpers.dart';
 import '../../models/student.dart';
@@ -8,6 +9,8 @@ import '../../models/note.dart';
 import '../../models/group_lesson.dart';
 import '../../services/database_service.dart';
 import '../../services/auth_service.dart';
+import '../../models/exam.dart';
+import '../../services/exam_service.dart';
 import '../../services/group_lesson_service.dart';
 import '../calendar/group_lesson_detail_dialog.dart';
 import '../reports/reports_list_view.dart';
@@ -282,94 +285,56 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     }
   }
 
-  Future<void> _showMessageDialog() async {
-    final messageController = TextEditingController();
-    String? phone = widget.student.phoneNumber;
-
-    if (phone == null || phone.isEmpty) {
-      final phoneController = TextEditingController();
-      final phoneRes = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Telefon Numarası Eksik'),
-          content: TextField(
-            controller: phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(hintText: '+90 555 123 45 67'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('İptal'),
+  Future<void> _addExam() async {
+    final titleController = TextEditingController();
+    final scoreController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Yeni Sınav Ekle'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(hintText: 'Sınav Başlığı (Örn: 1. Yazılı)'),
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Kaydet'),
+            const SizedBox(height: AppSizes.p12),
+            TextField(
+              controller: scoreController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(hintText: 'Alınan Not (İsteğe Bağlı)'),
             ),
           ],
         ),
-      );
-
-      if (phoneRes == true && phoneController.text.trim().isNotEmpty) {
-        phone = phoneController.text.trim();
-        final updated = widget.student.copyWith(phoneNumber: phone);
-        await ref.read(databaseServiceProvider).updateStudent(updated);
-      } else {
-        return;
-      }
-    }
-
-    if (!mounted) return;
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Mesaj Gönder'),
-        content: TextField(
-          controller: messageController,
-          maxLines: 3,
-          decoration: const InputDecoration(hintText: 'Mesajınız...'),
-        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, null),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('İptal'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, 'sms'),
-            child: const Text('SMS Uygulaması (Cihaz)'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'wa'),
-            child: const Text('WhatsApp (Cihaz)'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'twilio_wa'),
-            child: const Text('Twilio WhatsApp', style: TextStyle(color: AppColors.primary)),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Kaydet'),
           ),
         ],
       ),
     );
 
-    if (result == null || messageController.text.trim().isEmpty) return;
-
-    final msg = messageController.text.trim();
-    final messaging = ref.read(messagingServiceProvider);
-
-    if (result == 'wa') {
-      await messaging.launchWhatsAppApp(to: phone!, message: msg);
-    } else if (result == 'sms') {
-      await messaging.launchSmsApp(to: phone!, message: msg);
-    } else if (result == 'twilio_wa') {
-      final success = await messaging.sendWhatsAppViaTwilio(to: phone!, message: msg);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success ? 'Mesaj gönderildi!' : 'Mesaj gönderilemedi.'),
-            backgroundColor: success ? AppColors.success : AppColors.error,
-          ),
-        );
-      }
+    if (result == true && titleController.text.trim().isNotEmpty) {
+      final scoreStr = scoreController.text.trim();
+      final score = scoreStr.isNotEmpty ? double.tryParse(scoreStr) : null;
+      
+      final exam = Exam(
+        id: '',
+        studentId: widget.student.id,
+        title: titleController.text.trim(),
+        subject: widget.student.subject,
+        date: DateTime.now(),
+        score: score,
+        createdAt: DateTime.now(),
+      );
+      
+      await ref.read(examServiceProvider).addExam(exam);
     }
   }
 
@@ -385,9 +350,10 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
         ref.watch(studentGroupLessonsStreamProvider(widget.student.id));
     final paymentsAsync = ref.watch(paymentsStreamProvider);
     final notesAsync = ref.watch(notesStreamProvider);
+    final examsAsync = ref.watch(studentExamsStreamProvider(widget.student.id));
 
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         appBar: AppBar(
           title: Text(widget.student.nickname),
@@ -397,6 +363,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
             tabs: [
               Tab(text: 'Genel'),
               Tab(text: 'Dersler'),
+              Tab(text: 'Sınavlar'),
               Tab(text: 'Ödemeler'),
               Tab(text: 'Notlar'),
               Tab(text: 'Raporlar & Sertifikalar'),
@@ -746,6 +713,110 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
               ),
               error: (e, st) => Center(
                 child: Text('Dersler yüklenirken hata: ${e.toString()}'),
+              ),
+            ),
+
+            // Sınavlar
+            examsAsync.when(
+              data: (exams) {
+                final gradedExams = exams.where((e) => e.score != null).toList()
+                  ..sort((a, b) => a.date.compareTo(b.date));
+
+                return Stack(
+                  children: [
+                    exams.isEmpty
+                        ? const Center(child: Text('Henüz sınav eklenmemiş.'))
+                        : Column(
+                            children: [
+                              if (gradedExams.length > 1)
+                                Container(
+                                  height: 200,
+                                  padding: const EdgeInsets.only(top: AppSizes.p24, right: AppSizes.p24),
+                                  child: LineChart(
+                                    LineChartData(
+                                      gridData: const FlGridData(show: false),
+                                      titlesData: const FlTitlesData(show: false),
+                                      borderData: FlBorderData(show: false),
+                                      lineBarsData: [
+                                        LineChartBarData(
+                                          spots: gradedExams.asMap().entries.map((e) {
+                                            return FlSpot(e.key.toDouble(), e.value.score!);
+                                          }).toList(),
+                                          isCurved: true,
+                                          color: AppColors.primary,
+                                          barWidth: 4,
+                                          dotData: const FlDotData(show: true),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              Expanded(
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    AppSizes.p16,
+                                    AppSizes.p16,
+                                    AppSizes.p16,
+                                    80,
+                                  ),
+                                  itemCount: exams.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: AppSizes.p12),
+                                  itemBuilder: (context, i) {
+                                    final exam = exams[i];
+                                    return Card(
+                                      child: ListTile(
+                                        title: Text(exam.title),
+                                        subtitle: Text('${_formatDate(exam.date)} · ${exam.type}'),
+                                        trailing: exam.score != null
+                                            ? Text(
+                                                '${exam.score}/${exam.maxScore}',
+                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                              )
+                                            : const Text('Not girilmedi'),
+                                        onTap: () => _showExamDetail(exam),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                    Positioned(
+                      bottom: AppSizes.p16,
+                      right: AppSizes.p16,
+                      child: FloatingActionButton.extended(
+                        heroTag: 'fab-exam-${widget.student.id}',
+                        onPressed: _addExam,
+                        label: const Text('Yeni Sınav'),
+                        icon: const Icon(Icons.add),
+                        backgroundColor: AppColors.primary,
+                      ),
+                    ),
+                    // Report FAB
+                    Positioned(
+                      bottom: AppSizes.p16,
+                      right: AppSizes.p84,
+                      child: FloatingActionButton.extended(
+                        heroTag: 'fab-report-${widget.student.id}',
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => StudentReportView(studentId: widget.student.id),
+                          ),
+                        ),
+                        label: const Text('Rapor'),
+                        icon: const Icon(Icons.bar_chart),
+                        backgroundColor: AppColors.secondary,
+                      ),
+                    ),
+                  ],
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+              error: (e, st) => Center(
+                child: Text('Sınavlar yüklenirken hata: ${e.toString()}'),
               ),
             ),
 
