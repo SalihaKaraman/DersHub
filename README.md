@@ -12,13 +12,19 @@ DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek iç
 
 ### Uygulamayla neler yapabilirsiniz?
 
-- 👨‍🎓 **Öğrencilerinizi kaydedin ve yönetin** — İsim, sınıf, branş, saat ücreti bilgileriyle öğrenci profilleri oluşturun. Aktif/pasif durumlarını takip edin, arama ve filtreleme ile anında erişin.
+- 👨‍🎓 **Öğrencilerinizi kaydedin ve yönetin** — İsim, 1–12. sınıf düzeyi, branş ve saat ücreti bilgileriyle öğrenci profilleri oluşturun. Aktif/pasif durumlarını takip edin, arama ve filtreleme ile anında erişin.
 
 - 📅 **Ders programınızı planlayın** — Takvim üzerinde derslerinizi görsel olarak yönetin. Hangi gün, hangi öğrenciyle, hangi konuyu işleyeceğinizi planlayın. Haftalık gelir ve ders sayınızı anlık takip edin.
 
 - 💰 **Ödemelerinizi takip edin** — Ders oluşturduğunuzda otomatik olarak ödeme kaydı oluşturulur. Aylık kazanç raporu, bekleyen ödemeler, gecikmiş ödemeler ve ödeme dağılım grafikleriyle finansal durumunuzu her an görün.
 
 - 📝 **Renkli notlar tutun** — Öğrencilerinize özel veya genel notlar oluşturun. Renk kodlamasıyla notlarınızı kategorize edin, ödev takibi ve ders planlaması yapın.
+
+- 📊 **Sınav ve gelişim takibi yapın** — Sınav notlarını kaydedin, başarı grafiğini inceleyin; öğrenciler için gelişim raporu ve sertifika oluşturup PDF olarak paylaşın.
+
+- 👥 **Grup dersleri planlayın** — Birden fazla öğrenciyi aynı grup dersine ekleyin ve takvim üzerinden takip edin.
+
+- 💬 **Öğrencilerle iletişim kurun** — SMS, WhatsApp veya Twilio WhatsApp üzerinden mesaj gönderin.
 
 - 🔔 **Hatırlatmalar alın** — Yaklaşan dersler ve ödeme tarihleri için otomatik bildirimler alarak hiçbir şeyi kaçırmayın.
 
@@ -52,6 +58,9 @@ DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek iç
 | 📅 **Takvim** | Ders planlaması ve takvim görünümü |
 | 💰 **Ödeme Takibi** | Ödeme oluşturma, tahsilat, aylık gelir grafikleri |
 | 📝 **Notlar** | Öğrenciye özel renkli not kartları |
+| 📊 **Sınavlar ve Raporlar** | Sınav notları, başarı grafikleri, gelişim raporları ve sertifikalar |
+| 👥 **Grup Dersleri** | Birden fazla öğrencili ders planlama ve takibi |
+| 💬 **Mesajlaşma** | SMS, WhatsApp ve Twilio WhatsApp seçenekleri |
 | 🔔 **Bildirimler** | Ders ve ödeme hatırlatma bildirimleri |
 | 🌙 **Karanlık/Aydınlık Tema** | Kullanıcı tercihine göre dinamik tema |
 | 🌐 **Çoklu Dil** | Türkçe ve İngilizce destek |
@@ -62,8 +71,8 @@ DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek iç
 ## 🛠️ Teknoloji Yığını
 
 ### Framework & Dil
-- **Flutter** `>=3.38.5`
-- **Dart** `>=3.10.0`
+- **Flutter** `3.38+` önerilir
+- **Dart** `>=3.3.0 <4.0.0` (pubspec tanımı)
 
 ### State Management
 - [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) `^2.6.1` — Reaktif state yönetimi
@@ -130,6 +139,7 @@ lib/
     ├── students/               # Öğrenci listesi ve detay
     ├── calendar/               # Ders takvimi
     ├── payments/               # Ödeme yönetimi
+    ├── reports/                # Rapor ve sertifika yönetimi
     └── notes/                  # Not defteri
 ```
 
@@ -171,6 +181,8 @@ flutterfire configure
 ```
 
 > `firebase_options.dart` dosyası bu adımda otomatik oluşturulur.
+
+Uygulama Firebase başlatılamadığında mock veri modunda çalışabilir. Gerçek veriler için Firebase Authentication ve Cloud Firestore'u etkinleştirin. Grup dersleri sorguları uygulama tarafında sıralandığı için ayrıca composite index kurulması gerekmez.
 
 ### 4. Kodu Üret (Freezed Modeller)
 
@@ -233,6 +245,9 @@ flutter test test/widget_test.dart
 
 # Statik analiz
 flutter analyze
+
+# Sadece öğrenci ekranını analiz et
+flutter analyze lib/features/students/students_view.dart
 ```
 
 ---
