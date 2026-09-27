@@ -124,11 +124,14 @@ class GroupLessonService {
     return _firestore
         .collection('group_lessons')
         .where('teacherId', isEqualTo: _currentTeacherId)
-        .orderBy('dateTime', descending: false)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => GroupLesson.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snap) {
+      final lessons = snap.docs
+          .map((doc) => GroupLesson.fromMap(doc.data(), doc.id))
+          .toList();
+      lessons.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      return lessons;
+    });
   }
 
   /// Belirli bir öğrencinin dahil olduğu grup derslerini stream olarak getirir
@@ -143,11 +146,14 @@ class GroupLessonService {
     return _firestore
         .collection('group_lessons')
         .where('studentIds', arrayContains: studentId)
-        .orderBy('dateTime', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map((doc) => GroupLesson.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snap) {
+      final lessons = snap.docs
+          .map((doc) => GroupLesson.fromMap(doc.data(), doc.id))
+          .toList();
+      lessons.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      return lessons;
+    });
   }
 
   /// Yeni grup dersi ekler
@@ -155,9 +161,8 @@ class GroupLessonService {
     final lessonToSave = lesson.id.isEmpty
         ? lesson.copyWith(
             id: 'gl-${DateTime.now().millisecondsSinceEpoch}',
-            teacherId: lesson.teacherId.isEmpty
-                ? _currentTeacherId
-                : lesson.teacherId,
+            teacherId:
+                lesson.teacherId.isEmpty ? _currentTeacherId : lesson.teacherId,
             createdAt: DateTime.now(),
           )
         : lesson;
@@ -180,8 +185,7 @@ class GroupLessonService {
   /// Grup dersini günceller
   Future<void> updateGroupLesson(GroupLesson lesson) async {
     if (_useMockMode || _firestore == null) {
-      final index =
-          _mockGroupLessons.indexWhere((l) => l.id == lesson.id);
+      final index = _mockGroupLessons.indexWhere((l) => l.id == lesson.id);
       if (index >= 0) {
         _mockGroupLessons[index] = lesson;
         _mockGroupLessons.sort((a, b) => a.dateTime.compareTo(b.dateTime));
@@ -231,8 +235,7 @@ class GroupLessonService {
     List<GroupLessonNote> notes,
   ) async {
     if (_useMockMode || _firestore == null) {
-      final index =
-          _mockGroupLessons.indexWhere((l) => l.id == lessonId);
+      final index = _mockGroupLessons.indexWhere((l) => l.id == lessonId);
       if (index >= 0) {
         _mockGroupLessons[index] =
             _mockGroupLessons[index].copyWith(individualNotes: notes);
