@@ -22,11 +22,7 @@ class _StudentsViewState extends ConsumerState<StudentsView> {
 
   final List<String> _gradeOptions = [
     'Tümü',
-    '12. Sınıf',
-    '11. Sınıf',
-    '10. Sınıf',
-    '9. Sınıf',
-    '8. Sınıf',
+    ...List.generate(12, (index) => '${index + 1}. Sınıf'),
   ];
 
   @override
@@ -188,18 +184,15 @@ class _StudentsViewState extends ConsumerState<StudentsView> {
           Expanded(
             child: studentsAsync.when(
               data: (students) {
-                final activeCount = students
-                    .where((student) => student.isActive)
-                    .length;
+                final activeCount =
+                    students.where((student) => student.isActive).length;
                 final filteredStudents = students.where((student) {
-                  final matchesQuery =
-                      _searchQuery.isEmpty ||
+                  final matchesQuery = _searchQuery.isEmpty ||
                       student.nickname.toLowerCase().contains(_searchQuery) ||
                       student.subject.toLowerCase().contains(_searchQuery) ||
                       student.gradeLevel.toLowerCase().contains(_searchQuery);
                   final matchesActive = !_showActiveOnly || student.isActive;
-                  final matchesGrade =
-                      _selectedGrade == 'Tümü' ||
+                  final matchesGrade = _selectedGrade == 'Tümü' ||
                       student.gradeLevel == _selectedGrade;
                   return matchesQuery && matchesActive && matchesGrade;
                 }).toList();
@@ -657,19 +650,13 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                     prefixIcon: Icon(Icons.school_outlined),
                     hintText: 'Sınıf Düzeyi',
                   ),
-                  items:
-                      [
-                        '12. Sınıf',
-                        '11. Sınıf',
-                        '10. Sınıf',
-                        '9. Sınıf',
-                        '8. Sınıf',
-                      ].map((grade) {
-                        return DropdownMenuItem<String>(
-                          value: grade,
-                          child: Text(grade),
-                        );
-                      }).toList(),
+                  items: List.generate(12, (index) => '${index + 1}. Sınıf')
+                      .map((grade) {
+                    return DropdownMenuItem<String>(
+                      value: grade,
+                      child: Text(grade),
+                    );
+                  }).toList(),
                   onChanged: (value) {
                     if (value == null) return;
                     setState(() {
