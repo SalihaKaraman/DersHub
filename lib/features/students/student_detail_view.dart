@@ -15,7 +15,6 @@ import '../../services/group_lesson_service.dart';
 import '../calendar/group_lesson_detail_dialog.dart';
 import '../reports/reports_list_view.dart';
 import '../../services/messaging_service.dart';
-import '../../services/messaging_service.dart';
 
 class StudentDetailView extends ConsumerStatefulWidget {
   final Student student;
@@ -56,7 +55,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
       return;
     }
 
-    final controller = TextEditingController(text: widget.student.hourlyRate.toString());
+    final controller =
+        TextEditingController(text: widget.student.hourlyRate.toString());
     final res = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -257,7 +257,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, 'twilio_wa'),
-            child: const Text('Twilio WhatsApp', style: TextStyle(color: AppColors.primary)),
+            child: const Text('Twilio WhatsApp',
+                style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -269,20 +270,55 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     final messaging = ref.read(messagingServiceProvider);
 
     if (result == 'wa') {
-      await messaging.launchWhatsAppApp(to: phone!, message: msg);
+      await messaging.launchWhatsAppApp(to: phone, message: msg);
     } else if (result == 'sms') {
-      await messaging.launchSmsApp(to: phone!, message: msg);
+      await messaging.launchSmsApp(to: phone, message: msg);
     } else if (result == 'twilio_wa') {
-      final success = await messaging.sendWhatsAppViaTwilio(to: phone!, message: msg);
+      final success =
+          await messaging.sendWhatsAppViaTwilio(to: phone, message: msg);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Mesaj gönderildi!' : 'Mesaj gönderilemedi.'),
+            content:
+                Text(success ? 'Mesaj gönderildi!' : 'Mesaj gönderilemedi.'),
             backgroundColor: success ? AppColors.success : AppColors.error,
           ),
         );
       }
     }
+  }
+
+  Future<void> _showExamDetail(Exam exam) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(exam.title),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Ders: ${exam.subject}'),
+            Text('Tür: ${exam.type}'),
+            Text('Tarih: ${_formatDate(exam.date)}'),
+            Text(
+              exam.score == null
+                  ? 'Not: Girilmedi'
+                  : 'Not: ${exam.score}/${exam.maxScore}',
+            ),
+            if (exam.notes?.isNotEmpty == true) ...[
+              const SizedBox(height: AppSizes.p12),
+              Text(exam.notes!),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Kapat'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _addExam() async {
@@ -297,13 +333,15 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
           children: [
             TextField(
               controller: titleController,
-              decoration: const InputDecoration(hintText: 'Sınav Başlığı (Örn: 1. Yazılı)'),
+              decoration: const InputDecoration(
+                  hintText: 'Sınav Başlığı (Örn: 1. Yazılı)'),
             ),
             const SizedBox(height: AppSizes.p12),
             TextField(
               controller: scoreController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(hintText: 'Alınan Not (İsteğe Bağlı)'),
+              decoration:
+                  const InputDecoration(hintText: 'Alınan Not (İsteğe Bağlı)'),
             ),
           ],
         ),
@@ -323,7 +361,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     if (result == true && titleController.text.trim().isNotEmpty) {
       final scoreStr = scoreController.text.trim();
       final score = scoreStr.isNotEmpty ? double.tryParse(scoreStr) : null;
-      
+
       final exam = Exam(
         id: '',
         studentId: widget.student.id,
@@ -333,7 +371,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
         score: score,
         createdAt: DateTime.now(),
       );
-      
+
       await ref.read(examServiceProvider).addExam(exam);
     }
   }
@@ -341,9 +379,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final statusColor = widget.student.isActive
-        ? AppColors.success
-        : AppColors.warning;
+    final statusColor =
+        widget.student.isActive ? AppColors.success : AppColors.warning;
 
     final lessonsAsync = ref.watch(lessonsStreamProvider);
     final groupLessonsAsync =
@@ -402,9 +439,9 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                       widget.student.nickname,
                                       style: theme.textTheme.headlineSmall
                                           ?.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                   IconButton(
@@ -466,13 +503,16 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: statusColor,
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
-                                      widget.student.isActive ? 'Aktif' : 'Pasif',
+                                      widget.student.isActive
+                                          ? 'Aktif'
+                                          : 'Pasif',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -482,7 +522,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                   ),
                                   const SizedBox(width: AppSizes.p12),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: Colors.white24,
                                       borderRadius: BorderRadius.circular(16),
@@ -577,12 +618,10 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                   ...studentGroupLessons,
                 ];
                 allStudentLessons.sort((a, b) {
-                  final DateTime aDate = a is Lesson
-                      ? a.dateTime
-                      : (a as GroupLesson).dateTime;
-                  final DateTime bDate = b is Lesson
-                      ? b.dateTime
-                      : (b as GroupLesson).dateTime;
+                  final DateTime aDate =
+                      a is Lesson ? a.dateTime : (a as GroupLesson).dateTime;
+                  final DateTime bDate =
+                      b is Lesson ? b.dateTime : (b as GroupLesson).dateTime;
                   return bDate.compareTo(aDate);
                 });
 
@@ -613,8 +652,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                     ),
                                   ),
                                   child: ListTile(
-                                    onTap: () =>
-                                        GroupLessonDetailDialog.show(context, item),
+                                    onTap: () => GroupLessonDetailDialog.show(
+                                        context, item),
                                     leading: CircleAvatar(
                                       backgroundColor:
                                           AppColors.primary.withAlpha(25),
@@ -640,7 +679,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.primary.withAlpha(25),
+                                            color:
+                                                AppColors.primary.withAlpha(25),
                                             borderRadius:
                                                 BorderRadius.circular(4),
                                           ),
@@ -731,16 +771,22 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               if (gradedExams.length > 1)
                                 Container(
                                   height: 200,
-                                  padding: const EdgeInsets.only(top: AppSizes.p24, right: AppSizes.p24),
+                                  padding: const EdgeInsets.only(
+                                      top: AppSizes.p24, right: AppSizes.p24),
                                   child: LineChart(
                                     LineChartData(
                                       gridData: const FlGridData(show: false),
-                                      titlesData: const FlTitlesData(show: false),
+                                      titlesData:
+                                          const FlTitlesData(show: false),
                                       borderData: FlBorderData(show: false),
                                       lineBarsData: [
                                         LineChartBarData(
-                                          spots: gradedExams.asMap().entries.map((e) {
-                                            return FlSpot(e.key.toDouble(), e.value.score!);
+                                          spots: gradedExams
+                                              .asMap()
+                                              .entries
+                                              .map((e) {
+                                            return FlSpot(e.key.toDouble(),
+                                                e.value.score!);
                                           }).toList(),
                                           isCurved: true,
                                           color: AppColors.primary,
@@ -767,11 +813,14 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                     return Card(
                                       child: ListTile(
                                         title: Text(exam.title),
-                                        subtitle: Text('${_formatDate(exam.date)} · ${exam.type}'),
+                                        subtitle: Text(
+                                            '${_formatDate(exam.date)} · ${exam.type}'),
                                         trailing: exam.score != null
                                             ? Text(
                                                 '${exam.score}/${exam.maxScore}',
-                                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                                style: const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
                                               )
                                             : const Text('Not girilmedi'),
                                         onTap: () => _showExamDetail(exam),
@@ -791,22 +840,6 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                         label: const Text('Yeni Sınav'),
                         icon: const Icon(Icons.add),
                         backgroundColor: AppColors.primary,
-                      ),
-                    ),
-                    // Report FAB
-                    Positioned(
-                      bottom: AppSizes.p16,
-                      right: AppSizes.p84,
-                      child: FloatingActionButton.extended(
-                        heroTag: 'fab-report-${widget.student.id}',
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => StudentReportView(studentId: widget.student.id),
-                          ),
-                        ),
-                        label: const Text('Rapor'),
-                        icon: const Icon(Icons.bar_chart),
-                        backgroundColor: AppColors.secondary,
                       ),
                     ),
                   ],
@@ -941,11 +974,13 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                   ),
                                   subtitle: Text(
                                     note.content,
-                                    style: const TextStyle(color: Colors.white70),
+                                    style:
+                                        const TextStyle(color: Colors.white70),
                                   ),
                                   trailing: Text(
                                     _formatDate(note.createdAt),
-                                    style: const TextStyle(color: Colors.white70),
+                                    style:
+                                        const TextStyle(color: Colors.white70),
                                   ),
                                 ),
                               );
@@ -988,7 +1023,8 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
               loading: () => const Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
-              error: (e, _) => Center(child: Text('Ders bilgisi alınamadı: $e')),
+              error: (e, _) =>
+                  Center(child: Text('Ders bilgisi alınamadı: $e')),
             ),
           ],
         ),
