@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
@@ -36,11 +37,11 @@ class MessagingService {
       if (response.statusCode == 201) {
         return true;
       } else {
-        print('Twilio SMS Error: ${response.body}');
+        debugPrint('Twilio SMS Error: ${response.body}');
         return false;
       }
     } catch (e) {
-      print('Twilio SMS Exception: $e');
+      debugPrint('Twilio SMS Exception: $e');
       return false;
     }
   }
@@ -70,11 +71,11 @@ class MessagingService {
       if (response.statusCode == 201) {
         return true;
       } else {
-        print('Twilio WhatsApp Error: ${response.body}');
+        debugPrint('Twilio WhatsApp Error: ${response.body}');
         return false;
       }
     } catch (e) {
-      print('Twilio WhatsApp Exception: $e');
+      debugPrint('Twilio WhatsApp Exception: $e');
       return false;
     }
   }
@@ -88,7 +89,7 @@ class MessagingService {
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
-      print('Could not launch WhatsApp');
+      debugPrint('Could not launch WhatsApp');
     }
   }
 
@@ -99,7 +100,7 @@ class MessagingService {
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
-      print('Could not launch SMS App');
+      debugPrint('Could not launch SMS App');
     }
   }
 }

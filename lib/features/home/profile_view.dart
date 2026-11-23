@@ -754,25 +754,23 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                               await ref
                                   .read(authServiceProvider)
                                   .resetPassword(userEmail);
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Şifre sıfırlama maili gönderildi.',
-                                    ),
-                                    backgroundColor: AppColors.success,
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Şifre sıfırlama maili gönderildi.',
                                   ),
-                                );
-                              }
+                                  backgroundColor: AppColors.success,
+                                ),
+                              );
                             } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Hata: ${e.toString()}'),
-                                    backgroundColor: AppColors.error,
-                                  ),
-                                );
-                              }
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Hata: ${e.toString()}'),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
                             }
                           },
                         ),

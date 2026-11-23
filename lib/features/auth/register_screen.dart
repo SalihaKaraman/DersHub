@@ -143,31 +143,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ],
                         
                         // Rol Seçici
-                        Row(
-                          children: [
-                            Expanded(
-                              child: RadioListTile<UserRole>(
-                                title: const Text('Öğretmen'),
+                        SizedBox(
+                          width: double.infinity,
+                          child: SegmentedButton<UserRole>(
+                            segments: const [
+                              ButtonSegment<UserRole>(
                                 value: UserRole.teacher,
-                                groupValue: _selectedRole,
-                                contentPadding: EdgeInsets.zero,
-                                onChanged: (value) {
-                                  if (value != null) setState(() => _selectedRole = value);
-                                },
+                                label: Text('Öğretmen'),
+                                icon: Icon(Icons.school_outlined),
                               ),
-                            ),
-                            Expanded(
-                              child: RadioListTile<UserRole>(
-                                title: const Text('Veli'),
+                              ButtonSegment<UserRole>(
                                 value: UserRole.parent,
-                                groupValue: _selectedRole,
-                                contentPadding: EdgeInsets.zero,
-                                onChanged: (value) {
-                                  if (value != null) setState(() => _selectedRole = value);
-                                },
+                                label: Text('Veli'),
+                                icon: Icon(Icons.family_restroom_outlined),
                               ),
-                            ),
-                          ],
+                            ],
+                            selected: {_selectedRole},
+                            onSelectionChanged: (newSelection) {
+                              setState(() => _selectedRole = newSelection.first);
+                            },
+                          ),
                         ),
                         const SizedBox(height: AppSizes.p16),
                         
