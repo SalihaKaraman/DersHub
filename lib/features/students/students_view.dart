@@ -720,6 +720,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
     _subjectController.dispose();
     _rateController.dispose();
     _durationController.dispose();
+    _customGradeController.dispose();
     super.dispose();
   }
 
@@ -772,28 +773,88 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                       AppHelpers.validateRequired(val, 'Öğrenci Adı'),
                 ),
                 const SizedBox(height: AppSizes.p16),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedGrade,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.school_outlined),
-                    hintText: 'Sınıf Düzeyi',
-                  ),
-                  items: List.generate(12, (index) => '${index + 1}. Sınıf')
-                      .map((grade) {
-                    return DropdownMenuItem<String>(
-                      value: grade,
-                      child: Text(grade),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _selectedGrade = value;
-                    });
-                  },
-                  validator: (value) =>
-                      AppHelpers.validateRequired(value, 'Sınıf Düzeyi'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Sınıf / Sınav Düzeyi',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isCustomGrade = !_isCustomGrade;
+                          if (_isCustomGrade &&
+                              _customGradeController.text.isEmpty) {
+                            if (_selectedGrade != 'Özel / Diğer (Elle Yaz)') {
+                              _customGradeController.text = _selectedGrade;
+                            }
+                          }
+                        });
+                      },
+                      icon: Icon(
+                        _isCustomGrade
+                            ? Icons.list_rounded
+                            : Icons.edit_note_rounded,
+                        size: 16,
+                      ),
+                      label: Text(
+                        _isCustomGrade ? 'Listeden Seç' : 'Elle Sınav Yaz',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 4),
+                if (!_isCustomGrade)
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: _selectedGrade,
+                    decoration: const InputDecoration(
+                      prefixIcon: Icon(Icons.school_outlined),
+                      hintText: 'Sınıf veya Sınav Grubu Seçin',
+                    ),
+                    items: gradeOptionsList.map((grade) {
+                      return DropdownMenuItem<String>(
+                        value: grade,
+                        child: Text(grade),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedGrade = value;
+                        if (value == 'Özel / Diğer (Elle Yaz)') {
+                          _isCustomGrade = true;
+                        }
+                      });
+                    },
+                    validator: (value) =>
+                        AppHelpers.validateRequired(value, 'Sınıf Düzeyi'),
+                  ),
+                if (_isCustomGrade)
+                  TextFormField(
+                    controller: _customGradeController,
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(Icons.edit_note_rounded),
+                      hintText:
+                          'Sınav veya sınıf adı girin (Örn: YKS Sayısal, KPSS, LGS)',
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.clear_rounded, size: 18),
+                        onPressed: () => _customGradeController.clear(),
+                      ),
+                    ),
+                    validator: (val) => AppHelpers.validateRequired(
+                      val,
+                      'Sınıf veya Sınav Düzeyi',
+                    ),
+                  ),
                 const SizedBox(height: AppSizes.p16),
                 TextFormField(
                   controller: _subjectController,

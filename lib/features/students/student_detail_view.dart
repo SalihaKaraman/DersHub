@@ -32,6 +32,191 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
   }
 
+  Future<void> _editStudentDialog(Student currentStudent) async {
+    final nicknameController =
+        TextEditingController(text: currentStudent.nickname);
+    final subjectController =
+        TextEditingController(text: currentStudent.subject);
+    final customGradeController = TextEditingController();
+
+    const standardGrades = [
+      '1. Sınıf',
+      '2. Sınıf',
+      '3. Sınıf',
+      '4. Sınıf',
+      '5. Sınıf',
+      '6. Sınıf',
+      '7. Sınıf',
+      '8. Sınıf',
+      '9. Sınıf',
+      '10. Sınıf',
+      '11. Sınıf',
+      '12. Sınıf',
+      'Mezun',
+      'YKS Hazırlık',
+      'LGS Hazırlık',
+      'KPSS',
+      'DGS',
+      'Özel / Diğer (Elle Yaz)',
+    ];
+
+    final isExistingStandard =
+        standardGrades.contains(currentStudent.gradeLevel) &&
+            currentStudent.gradeLevel != 'Özel / Diğer (Elle Yaz)';
+    String selectedGrade = isExistingStandard
+        ? currentStudent.gradeLevel
+        : 'Özel / Diğer (Elle Yaz)';
+    bool isCustom = !isExistingStandard;
+    if (isCustom) {
+      customGradeController.text = currentStudent.gradeLevel;
+    }
+
+    final res = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.r20),
+            ),
+            title: const Text('Öğrenci Bilgilerini Düzenle'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: nicknameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Öğrenci Adı Soyadı',
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.p16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Sınıf / Sınav Düzeyi',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            isCustom = !isCustom;
+                            if (isCustom &&
+                                customGradeController.text.isEmpty) {
+                              if (selectedGrade != 'Özel / Diğer (Elle Yaz)') {
+                                customGradeController.text = selectedGrade;
+                              }
+                            }
+                          });
+                        },
+                        icon: Icon(
+                          isCustom
+                              ? Icons.list_rounded
+                              : Icons.edit_note_rounded,
+                          size: 16,
+                        ),
+                        label: Text(
+                          isCustom ? 'Listeden Seç' : 'Elle Sınav Yaz',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  if (!isCustom)
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+                      initialValue: selectedGrade,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.school_outlined),
+                      ),
+                      items: standardGrades.map((g) {
+                        return DropdownMenuItem<String>(
+                          value: g,
+                          child: Text(g),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val == null) return;
+                        setDialogState(() {
+                          selectedGrade = val;
+                          if (val == 'Özel / Diğer (Elle Yaz)') {
+                            isCustom = true;
+                          }
+                        });
+                      },
+                    ),
+                  if (isCustom)
+                    TextField(
+                      controller: customGradeController,
+                      decoration: const InputDecoration(
+                        prefixIcon: Icon(Icons.edit_note_rounded),
+                        labelText: 'Sınav veya Sınıf Adı',
+                        hintText: 'Örn: YKS Sayısal, KPSS, ALES',
+                      ),
+                    ),
+                  const SizedBox(height: AppSizes.p16),
+                  TextField(
+                    controller: subjectController,
+                    decoration: const InputDecoration(
+                      labelText: 'Ders / Branş',
+                      prefixIcon: Icon(Icons.book_outlined),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('İptal'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (nicknameController.text.trim().isEmpty) return;
+                  Navigator.pop(context, true);
+                },
+                child: const Text('Kaydet'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (res == true) {
+      final grade = (isCustom || selectedGrade == 'Özel / Diğer (Elle Yaz)')
+          ? customGradeController.text.trim()
+          : selectedGrade;
+      final updated = currentStudent.copyWith(
+        nickname: nicknameController.text.trim(),
+        gradeLevel: grade.isNotEmpty ? grade : currentStudent.gradeLevel,
+        subject: subjectController.text.trim().isNotEmpty
+            ? subjectController.text.trim()
+            : currentStudent.subject,
+      );
+      await ref.read(databaseServiceProvider).updateStudent(updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Öğrenci bilgileri güncellendi.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _saveNickname() async {
     final newNick = _editingNickname.trim();
     if (newNick.isEmpty) return;
