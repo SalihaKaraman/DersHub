@@ -27,6 +27,11 @@ class _StudentsViewState extends ConsumerState<StudentsView> {
   final List<String> _gradeOptions = [
     'Tümü',
     ...List.generate(12, (index) => '${index + 1}. Sınıf'),
+    'Mezun',
+    'YKS Hazırlık',
+    'LGS Hazırlık',
+    'KPSS',
+    'DGS',
   ];
 
   @override
@@ -157,26 +162,47 @@ class _StudentsViewState extends ConsumerState<StudentsView> {
                     ),
                     const SizedBox(width: AppSizes.p12),
                     Expanded(
-                      child: DropdownButtonFormField<String>(
-                        isExpanded: true,
-                        initialValue: _selectedGrade,
-                        decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.filter_alt_outlined),
-                          hintText: 'Sınıf',
-                        ),
-                        items: _gradeOptions
-                            .map(
-                              (grade) => DropdownMenuItem<String>(
-                                value: grade,
-                                child: Text(grade),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _selectedGrade = value;
-                          });
+                      child: Builder(
+                        builder: (context) {
+                          final studentsList =
+                              studentsAsync.value ?? <Student>[];
+                          final dynamicOptions = <String>{
+                            ..._gradeOptions,
+                            ...studentsList
+                                .map((s) => s.gradeLevel.trim())
+                                .where((g) => g.isNotEmpty),
+                          }.toList();
+
+                          final effectiveGrade =
+                              dynamicOptions.contains(_selectedGrade)
+                                  ? _selectedGrade
+                                  : 'Tümü';
+
+                          return DropdownButtonFormField<String>(
+                            isExpanded: true,
+                            initialValue: effectiveGrade,
+                            decoration: const InputDecoration(
+                              prefixIcon: Icon(Icons.filter_alt_outlined),
+                              hintText: 'Sınıf',
+                            ),
+                            items: dynamicOptions
+                                .map(
+                                  (grade) => DropdownMenuItem<String>(
+                                    value: grade,
+                                    child: Text(
+                                      grade,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              if (value == null) return;
+                              setState(() {
+                                _selectedGrade = value;
+                              });
+                            },
+                          );
                         },
                       ),
                     ),
@@ -541,8 +567,31 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   final _subjectController = TextEditingController();
   final _rateController = TextEditingController();
   final _durationController = TextEditingController(text: '60');
+  final _customGradeController = TextEditingController();
   String _selectedGrade = '12. Sınıf';
+  bool _isCustomGrade = false;
   bool _isLoading = false;
+
+  static const List<String> gradeOptionsList = [
+    '1. Sınıf',
+    '2. Sınıf',
+    '3. Sınıf',
+    '4. Sınıf',
+    '5. Sınıf',
+    '6. Sınıf',
+    '7. Sınıf',
+    '8. Sınıf',
+    '9. Sınıf',
+    '10. Sınıf',
+    '11. Sınıf',
+    '12. Sınıf',
+    'Mezun',
+    'YKS Hazırlık',
+    'LGS Hazırlık',
+    'KPSS',
+    'DGS',
+    'Özel / Diğer (Elle Yaz)',
+  ];
   bool _repeatWeekly = true;
   DateTime _firstLessonDate = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _lessonTime = const TimeOfDay(hour: 16, minute: 0);
@@ -577,11 +626,15 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
     });
 
     final teacherId = ref.read(authStateProvider).value?.id ?? 'mock_teacher';
+    final grade = (_isCustomGrade || _selectedGrade == 'Özel / Diğer (Elle Yaz)')
+        ? _customGradeController.text.trim()
+        : _selectedGrade;
+
     final newStudent = Student(
       id: '',
       teacherId: teacherId,
       nickname: _nicknameController.text.trim(),
-      gradeLevel: _selectedGrade,
+      gradeLevel: grade.isNotEmpty ? grade : _selectedGrade,
       subject: _subjectController.text.trim(),
       hourlyRate: double.tryParse(_rateController.text.trim()) ?? 0.0,
       createdAt: DateTime.now(),
