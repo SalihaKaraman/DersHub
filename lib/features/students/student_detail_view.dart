@@ -26,8 +26,6 @@ class StudentDetailView extends ConsumerStatefulWidget {
 }
 
 class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
-  String _editingNickname = '';
-
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
   }
@@ -215,13 +213,6 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
         );
       }
     }
-  }
-
-  Future<void> _saveNickname() async {
-    final newNick = _editingNickname.trim();
-    if (newNick.isEmpty) return;
-    final updated = widget.student.copyWith(nickname: newNick);
-    await ref.read(databaseServiceProvider).updateStudent(updated);
   }
 
   Future<void> _toggleActive(bool val) async {
@@ -708,8 +699,15 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final allStudentsAsync = ref.watch(studentsStreamProvider);
+    final currentStudent = allStudentsAsync.value?.firstWhere(
+          (s) => s.id == widget.student.id,
+          orElse: () => widget.student,
+        ) ??
+        widget.student;
+
     final statusColor =
-        widget.student.isActive ? AppColors.success : AppColors.warning;
+        currentStudent.isActive ? AppColors.success : AppColors.warning;
 
     final lessonsAsync = ref.watch(lessonsStreamProvider);
     final groupLessonsAsync =
@@ -722,7 +720,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
       length: 6,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.student.nickname),
+          title: Text(currentStudent.nickname),
           bottom: const TabBar(
             isScrollable: true,
             tabAlignment: TabAlignment.start,
@@ -765,7 +763,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                 children: [
                                   Expanded(
                                     child: Text(
-                                      widget.student.nickname,
+                                      currentStudent.nickname,
                                       style: theme.textTheme.headlineSmall
                                           ?.copyWith(
                                         color: Colors.white,
@@ -774,39 +772,9 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                     ),
                                   ),
                                   IconButton(
-                                    onPressed: () async {
-                                      _editingNickname =
-                                          widget.student.nickname;
-                                      final res = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Rumuzu Düzenle'),
-                                          content: TextField(
-                                            autofocus: true,
-                                            onChanged: (v) =>
-                                                _editingNickname = v,
-                                            controller: TextEditingController(
-                                              text: _editingNickname,
-                                            ),
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, false),
-                                              child: const Text('İptal'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(context, true),
-                                              child: const Text('Kaydet'),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                      if (res == true) {
-                                        await _saveNickname();
-                                      }
-                                    },
+                                    tooltip: 'Öğrenci Bilgilerini Düzenle',
+                                    onPressed: () =>
+                                        _editStudentDialog(currentStudent),
                                     icon: const Icon(
                                       Icons.edit,
                                       color: Colors.white,
@@ -823,7 +791,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               ),
                               const SizedBox(height: AppSizes.p8),
                               Text(
-                                '${widget.student.gradeLevel} · ${widget.student.subject}',
+                                '${currentStudent.gradeLevel} · ${currentStudent.subject}',
                                 style: theme.textTheme.bodyLarge?.copyWith(
                                   color: Colors.white70,
                                 ),
@@ -839,7 +807,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
-                                      widget.student.isActive
+                                      currentStudent.isActive
                                           ? 'Aktif'
                                           : 'Pasif',
                                       style: const TextStyle(
@@ -858,7 +826,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                       borderRadius: BorderRadius.circular(16),
                                     ),
                                     child: Text(
-                                      '${AppHelpers.formatCurrency(widget.student.hourlyRate)}/saat',
+                                      '${AppHelpers.formatCurrency(currentStudent.hourlyRate)}/saat',
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -880,7 +848,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                                   ),
                                   const SizedBox(width: AppSizes.p12),
                                   Switch(
-                                    value: widget.student.isActive,
+                                    value: currentStudent.isActive,
                                     onChanged: (v) => _toggleActive(v),
                                     activeThumbColor: Colors.white,
                                     activeTrackColor: AppColors.success,
@@ -906,7 +874,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                         color: AppColors.primary,
                       ),
                       title: const Text('Kayıt Tarihi'),
-                      subtitle: Text(_formatDate(widget.student.createdAt)),
+                      subtitle: Text(_formatDate(currentStudent.createdAt)),
                     ),
                   ),
                   const SizedBox(height: AppSizes.p12),
@@ -921,7 +889,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                       ),
                       title: const Text('Saatlik Ücret'),
                       subtitle: Text(
-                        AppHelpers.formatCurrency(widget.student.hourlyRate),
+                        AppHelpers.formatCurrency(currentStudent.hourlyRate),
                       ),
                       trailing: IconButton(
                         icon: const Icon(Icons.edit, color: AppColors.primary),
