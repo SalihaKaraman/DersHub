@@ -1,8 +1,8 @@
 # 📚 DersHub
 
-> Özel ders öğretmenleri için akıllı yönetim uygulaması
+> Özel ders öğretmenleri için akıllı, modern ve hepsi bir arada yönetim uygulaması
 
-DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek için tasarlanmış **hepsi bir arada** bir mobil uygulamadır. Öğrenci takibi, ders takvimi, ödeme yönetimi ve not tutma gibi tüm ihtiyaçları tek bir çatı altında toplar.
+DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek için tasarlanmış **Feature-First (Özellik Odaklı)** mimarili bir mobil uygulamadır. Öğrenci takibi, sınav/sınıf düzeyleri, ders takvimi, otomatik ödeme yönetimi, interaktif notlar ve PDF gelişim raporlarını tek çatı altında toplar.
 
 ---
 
@@ -12,23 +12,16 @@ DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek iç
 
 ### Uygulamayla neler yapabilirsiniz?
 
-- 👨‍🎓 **Öğrencilerinizi kaydedin ve yönetin** — İsim, 1–12. sınıf düzeyi, branş ve saat ücreti bilgileriyle öğrenci profilleri oluşturun. Aktif/pasif durumlarını takip edin, arama ve filtreleme ile anında erişin.
-
-- 📅 **Ders programınızı planlayın** — Takvim üzerinde derslerinizi görsel olarak yönetin. Hangi gün, hangi öğrenciyle, hangi konuyu işleyeceğinizi planlayın. Haftalık gelir ve ders sayınızı anlık takip edin.
-
-- 💰 **Ödemelerinizi takip edin** — Ders oluşturduğunuzda otomatik olarak ödeme kaydı oluşturulur. Aylık kazanç raporu, bekleyen ödemeler, gecikmiş ödemeler ve ödeme dağılım grafikleriyle finansal durumunuzu her an görün.
-
-- 📝 **Renkli notlar tutun** — Öğrencilerinize özel veya genel notlar oluşturun. Renk kodlamasıyla notlarınızı kategorize edin, ödev takibi ve ders planlaması yapın.
-
-- 📊 **Sınav ve gelişim takibi yapın** — Sınav notlarını kaydedin, başarı grafiğini inceleyin; öğrenciler için gelişim raporu ve sertifika oluşturup PDF olarak paylaşın.
-
-- 👥 **Grup dersleri planlayın** — Birden fazla öğrenciyi aynı grup dersine ekleyin ve takvim üzerinden takip edin.
-
-- 💬 **Öğrencilerle iletişim kurun** — SMS, WhatsApp veya Twilio WhatsApp üzerinden mesaj gönderin.
-
-- 🔔 **Hatırlatmalar alın** — Yaklaşan dersler ve ödeme tarihleri için otomatik bildirimler alarak hiçbir şeyi kaçırmayın.
-
-- 👤 **Profilinizi özelleştirin** — Ad, branş bilgilerinizi düzenleyin; tema (açık/koyu), dil ve bildirim tercihlerinizi yönetin. Verilerinizi CSV olarak dışa aktarın.
+- 👨‍🎓 **Öğrencilerinizi Kaydedin ve Yönetin** — İsim, 1–12. sınıf düzeyleri, **Mezun** durumu veya **istediğiniz sınav adı** (*YKS Sayısal, KPSS, LGS, ALES vb.*) ile serbest metin girişi yaparak öğrencilerinizi kaydedin. Bilgilerini istediğiniz an canlı olarak düzenleyin.
+- 🔍 **Akıllı ve Dinamik Filtreleme** — Öğrencilerinizi aktiflik durumuna, sınıf düzeyine veya kayıtlı özel sınavlarına göre anında listeleyip filtreleyin.
+- 📅 **Ders Programınızı Planlayın** — Takvim üzerinde derslerinizi görsel olarak yönetin. Haftalık otomatik tekrarlayan dersler tanımlayın. Haftalık gelir ve ders sayınızı anlık takip edin.
+- 💰 **Ödemelerinizi Takip Edin** — Ders oluşturduğunuzda otomatik olarak ödeme kaydı oluşturulur. Aylık kazanç raporu, bekleyen ödemeler, gecikmiş ödemeler ve ödeme dağılım grafikleriyle finansal durumunuzu her an görün.
+- 📝 **Gelişmiş Renkli Notlar (CRUD)** — Öğrencilerinize özel veya genel notlar oluşturun. Notlarınızı **düzenleyin**, **onaylı olarak silin** ve renk paletleriyle kategorize edin.
+- 📊 **Sınav ve Gelişim Takibi** — Sınav notlarını kaydedin, başarı grafiğini inceleyin; öğrenciler için profesyonel A4 gelişim raporu ve başarı sertifikası oluşturup PDF olarak paylaşın.
+- 👥 **Grup Dersleri Planlayın** — Birden fazla öğrenciyi aynı grup dersine ekleyin, devam durumlarını ve bireysel ders notlarını takvim üzerinden takip edin.
+- 💬 **Öğrencilerle İletişim Kurun** — SMS, cihaz WhatsApp uygulaması veya Twilio API üzerinden tek tıkla mesaj gönderin.
+- 🔔 **Hatırlatmalar Alın** — Yaklaşan dersler ve ödeme tarihleri için otomatik yerel bildirimler alarak hiçbir şeyi kaçırmayın.
+- 👤 **Profil & Güvenlik** — Ad ve branş bilgilerinizi düzenleyin; tema (açık/koyu), dil ve bildirim tercihlerinizi yönetin. Verilerinizi CSV olarak dışa aktarın.
 
 ---
 
@@ -50,118 +43,154 @@ DersHub, özel ders veren öğretmenlerin günlük iş yükünü hafifletmek iç
 
 ---
 
-## ✨ Özellikler
+## ✨ Modül Özellikleri
 
 | Modül | Açıklama |
 |---|---|
-| 👨‍🎓 **Öğrenci Yönetimi** | Öğrenci ekleme, düzenleme, silme; sınıf ve branş bazlı filtreleme |
-| 📅 **Takvim** | Ders planlaması ve takvim görünümü |
-| 💰 **Ödeme Takibi** | Ödeme oluşturma, tahsilat, aylık gelir grafikleri |
-| 📝 **Notlar** | Öğrenciye özel renkli not kartları |
-| 📊 **Sınavlar ve Raporlar** | Sınav notları, başarı grafikleri, gelişim raporları ve sertifikalar |
-| 👥 **Grup Dersleri** | Birden fazla öğrencili ders planlama ve takibi |
-| 💬 **Mesajlaşma** | SMS, WhatsApp ve Twilio WhatsApp seçenekleri |
-| 🔔 **Bildirimler** | Ders ve ödeme hatırlatma bildirimleri |
-| 🌙 **Karanlık/Aydınlık Tema** | Kullanıcı tercihine göre dinamik tema |
-| 🌐 **Çoklu Dil** | Türkçe ve İngilizce destek |
-| 🔐 **Firebase Auth** | E-posta/şifre ile güvenli kimlik doğrulama |
+| 👨‍🎓 **Öğrenci Yönetimi** | Ekleme, düzenleme, silme; 1–12. Sınıf, **Mezun** ve **Özel Sınav (YKS, KPSS, LGS vb.)** desteği; dinamik filtreleme |
+| 📅 **Ders Takvimi** | Bireysel ve grup dersleri, haftalık otomatik tekrar seçeneği ve takvim görünümü |
+| 💰 **Ödeme Takibi** | Otomatik ödeme kaydı, tahsilat durumu, aylık gelir ve durum analiz grafikleri |
+| 📝 **Not Defteri** | Öğrenciye bağlı veya genel notlar; tam düzenleme, onaylı silme ve renk kartları |
+| 📊 **Sınav & Raporlar** | Sınav not girişi, FL Chart başarı eğrileri, PDF gelişim raporları ve başarı sertifikası |
+| 👥 **Grup Dersleri** | Çoklu öğrenci katılımlı etüt/ders planlama, yoklama ve bireysel not takibi |
+| 💬 **Mesajlaşma** | Cihaz SMS, Cihaz WhatsApp (wa.me) ve Twilio REST API entegrasyonu |
+| 🔔 **Bildirimler** | Yerel bildirim sistemi (Local Notifications) ile ders ve ödeme alarmları |
+| 🌙 **Tema & Yerelleştirme**| Material 3 açık/koyu dinamik tema ve Türkçe/İngilizce dil desteği |
+| 🔐 **Firebase Auth** | E-posta/şifre ile güvenli kimlik doğrulama veya offline Mock Veri Modu |
 
 ---
 
-## 🛠️ Teknoloji Yığını
+## 🛠️ Teknoloji Yığını & Mimari
 
-### Framework & Dil
-- **Flutter** `3.38+` önerilir
-- **Dart** `>=3.3.0 <4.0.0` (pubspec tanımı)
+Uygulama, **Feature-First (Özellik Tabanlı)** katmanlı mimari prensiplerine göre yapılandırılmıştır:
 
-### State Management
-- [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) `^2.6.1` — Reaktif state yönetimi
+### Mimari Katmanlar
+- **Core Katmanı (`lib/core/`):** Tasarım sistemi (`theme.dart`), sabitler (`constants.dart`), yardımcı metotlar (`helpers.dart`) ve merkezi barrel export (`core.dart`).
+- **Models Katmanı (`lib/models/`):** Freezed & JSON Serializable ile üretilmiş immutable veri modelleri (`models.dart`).
+- **Services Katmanı (`lib/services/`):** Firestore, Authentication, Notifications, Messaging, PDF Generator ve Riverpod provider'ları (`services.dart`).
+- **Features Katmanı (`lib/features/`):** Her özelliğin kendi UI ve Controller/State mantığını barındırdığı modüller (`features.dart`).
 
-### Backend & Veritabanı
-- [firebase_core](https://pub.dev/packages/firebase_core) `^3.13.1`
-- [firebase_auth](https://pub.dev/packages/firebase_auth) `^5.5.4`
-- [cloud_firestore](https://pub.dev/packages/cloud_firestore) `^5.6.9`
+```
+                    ┌───────────────────────────────┐
+                    │      Features Layer (UI)      │
+                    │ (Students, Calendar, Payments)│
+                    └───────────────┬───────────────┘
+                                    │ consumes
+                    ┌───────────────▼───────────────┐
+                    │      Riverpod Providers       │
+                    │   (Reactive State & Streams)  │
+                    └───────────────┬───────────────┘
+                                    │ calls
+                    ┌───────────────▼───────────────┐
+                    │        Services Layer         │
+                    │ (DatabaseService, AuthService)│
+                    └───────────────┬───────────────┘
+                                    │ parses
+                    ┌───────────────▼───────────────┐
+                    │     Models (Freezed / JSON)   │
+                    └───────────────────────────────┘
+```
 
-### UI & Görsel
-- [google_fonts](https://pub.dev/packages/google_fonts) `^6.2.1`
-- [fl_chart](https://pub.dev/packages/fl_chart) `^0.70.2` — Gelir grafikleri
-- [table_calendar](https://pub.dev/packages/table_calendar) `^3.1.3` — Takvim bileşeni
-- [flutter_spinkit](https://pub.dev/packages/flutter_spinkit) `^5.2.1` — Yükleme animasyonları
+### Kullanılan Kütüphaneler
 
-### Bildirimler
-- [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) `^18.0.1`
-- [timezone](https://pub.dev/packages/timezone) `^0.9.4`
-
-### Model & Seri Hale Getirme
-- [freezed_annotation](https://pub.dev/packages/freezed_annotation) `^2.4.4`
-- [json_annotation](https://pub.dev/packages/json_annotation) `^4.9.0`
-
-### Kod Üretimi (Dev)
-- [build_runner](https://pub.dev/packages/build_runner) `^2.4.14`
-- [freezed](https://pub.dev/packages/freezed) `^2.5.8`
-- [json_serializable](https://pub.dev/packages/json_serializable) `^6.9.4`
+- **Framework:** Flutter `3.27+` / Dart `3.6+`
+- **Minimum iOS Target:** iOS `15.0` (Xcode 16+ uyumlu)
+- **State Management:** [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) `^2.6.1`
+- **Backend & Veritabanı:**
+  - [firebase_core](https://pub.dev/packages/firebase_core) `^3.13.1`
+  - [firebase_auth](https://pub.dev/packages/firebase_auth) `^5.5.4`
+  - [cloud_firestore](https://pub.dev/packages/cloud_firestore) `^5.6.9`
+- **Grafik & Arayüz:**
+  - [google_fonts](https://pub.dev/packages/google_fonts) `^6.2.1`
+  - [fl_chart](https://pub.dev/packages/fl_chart) `^0.70.2`
+  - [table_calendar](https://pub.dev/packages/table_calendar) `^3.1.3`
+  - [flutter_spinkit](https://pub.dev/packages/flutter_spinkit) `^5.2.1`
+- **PDF & Yazdırma:**
+  - [pdf](https://pub.dev/packages/pdf) `^3.11.1`
+  - [printing](https://pub.dev/packages/printing) `^5.13.4`
+- **Bildirimler:**
+  - [flutter_local_notifications](https://pub.dev/packages/flutter_local_notifications) `^18.0.1`
+  - [timezone](https://pub.dev/packages/timezone) `^0.9.4`
+- **Kod Üretimi:**
+  - [freezed](https://pub.dev/packages/freezed) `^2.5.8`
+  - [json_serializable](https://pub.dev/packages/json_serializable) `^6.9.4`
+  - [build_runner](https://pub.dev/packages/build_runner) `^2.4.14`
 
 ---
 
-## 📁 Proje Yapısı
+## 📁 Dizin Yapısı
 
 ```
 lib/
-├── main.dart                   # Uygulama giriş noktası
-├── firebase_options.dart       # Firebase platform yapılandırması
+├── main.dart                       # Uygulama giriş noktası ve ProviderScope
+├── firebase_options.dart.example   # Açık kaynak / klonlama için Firebase şablonu
 │
-├── core/
-│   ├── constants.dart          # Renkler, boyutlar, string sabitleri
-│   ├── theme.dart              # Açık/koyu tema tanımları
-│   └── helpers.dart            # Yardımcı fonksiyonlar
+├── core/                           # Çekirdek araçlar ve tasarım sistemi
+│   ├── core.dart                   # Merkezi Core barrel export
+│   ├── constants.dart              # Renkler, tipografi, sabit metinler
+│   ├── helpers.dart                # Para/tarih formatlama, doğrulayıcılar
+│   └── theme.dart                  # Material 3 Açık/Koyu tema tanımları
 │
-├── models/
-│   ├── student.dart            # Öğrenci modeli (Freezed)
-│   ├── lesson.dart             # Ders modeli (Freezed)
-│   ├── payment.dart            # Ödeme modeli (Freezed)
-│   ├── note.dart               # Not modeli
-│   └── progress_note.dart      # İlerleme notu modeli
+├── models/                         # Veri modelleri ve JSON serileştirme
+│   ├── models.dart                 # Merkezi Models barrel export
+│   ├── student.dart                # Öğrenci modeli (Freezed)
+│   ├── lesson.dart                 # Bireysel ders modeli (Freezed)
+│   ├── group_lesson.dart           # Grup dersi modeli (Freezed)
+│   ├── payment.dart                # Ödeme modeli (Freezed)
+│   ├── note.dart                   # Not modeli (CRUD destekli)
+│   ├── exam.dart                   # Sınav modeli (Freezed)
+│   ├── report.dart                 # Gelişim raporu modeli (Freezed)
+│   ├── parent.dart                 # Veli modeli (Freezed)
+│   ├── app_user.dart               # Kullanıcı oturum modeli
+│   ├── teacher.dart                # Öğretmen profili
+│   └── user_role.dart              # Kullanıcı rolleri (Öğretmen / Veli)
 │
-├── services/
-│   ├── auth_service.dart       # Firebase kimlik doğrulama
-│   ├── database_service.dart   # Firestore CRUD işlemleri
-│   ├── firestore_service.dart  # Firestore sorgu yardımcısı
-│   ├── lesson_service.dart     # Ders iş mantığı
-│   ├── notification_service.dart # Yerel bildirimler
-│   ├── payment_service.dart    # Ödeme iş mantığı
-│   ├── progress_note_service.dart
-│   ├── settings_service.dart   # Tema & dil tercihleri
-│   └── student_service.dart    # Öğrenci iş mantığı
+├── services/                       # Veritabanı, kimlik ve dış servisler
+│   ├── services.dart               # Merkezi Services barrel export
+│   ├── database_service.dart       # Firestore CRUD & Mock veri sağlayıcısı
+│   ├── auth_service.dart           # Firebase Authentication
+│   ├── firestore_service.dart      # Firestore genel sorgu yardımcısı
+│   ├── student_service.dart        # Öğrenci iş akışları
+│   ├── lesson_service.dart         # Ders oluşturma ve durum güncelleme
+│   ├── group_lesson_service.dart   # Grup dersi yönetimi
+│   ├── payment_service.dart        # Finansal işlemler ve tahsilat
+│   ├── exam_service.dart           # Sınav notları servisi
+│   ├── report_service.dart         # Raporlama iş mantığı
+│   ├── pdf_generator_service.dart  # A4 PDF rapor ve sertifika üretimi
+│   ├── messaging_service.dart      # SMS, WhatsApp & Twilio
+│   ├── notification_service.dart   # Yerel ders ve ödeme alarmları
+│   └── settings_service.dart       # Tema ve dil tercihleri
 │
-└── features/
-    ├── auth/                   # Giriş, kayıt, splash ekranları
-    ├── home/                   # Ana sayfa / dashboard
-    ├── students/               # Öğrenci listesi ve detay
-    ├── calendar/               # Ders takvimi
-    ├── payments/               # Ödeme yönetimi
-    ├── reports/                # Rapor ve sertifika yönetimi
-    └── notes/                  # Not defteri
+└── features/                       # Ekranlar ve kullanıcı arayüzü
+    ├── features.dart               # Merkezi Features barrel export
+    ├── auth/                       # Giriş, kayıt, şifre sıfırlama, splash
+    ├── home/                       # Ana sayfa dashboard ve profil
+    ├── students/                   # Öğrenci listesi, ekleme ve detay sayfası
+    ├── calendar/                   # Ders takvimi, yeni ders & grup dersi
+    ├── payments/                   # Gelir analizleri ve ödeme listesi
+    ├── notes/                      # Renkli notlar kartları ve ekleme/düzenleme
+    ├── reports/                    # Rapor listesi ve PDF önizleme
+    └── parent/                     # Veli öğrenci takip görünümü
 ```
 
 ---
 
-## 🚀 Kurulum
+## 🚀 Kurulum ve Çalıştırma
 
 ### Ön Gereksinimler
 
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) `>=3.10`
-- [Dart SDK](https://dart.dev/get-dart) `>=3.10`
-- [Firebase CLI](https://firebase.google.com/docs/cli)
-- Xcode (iOS) veya Android Studio (Android)
+- [Flutter SDK](https://docs.flutter.dev/get-started/install) `>=3.22.0`
+- [Dart SDK](https://dart.dev/get-dart) `>=3.3.0`
+- Xcode 16+ (iOS için) veya Android Studio (Android için)
 
-### 1. Depoyu Klonla
+### 1. Depoyu Klonlayın
 
 ```bash
-git clone https://github.com/kullanici-adi/dershub.git
+git clone https://github.com/SalihaKaraman/DersHub.git
 cd dershub
 ```
 
-### 2. Bağımlılıkları Yükle
+### 2. Bağımlılıkları İndirin
 
 ```bash
 flutter pub get
@@ -169,117 +198,83 @@ flutter pub get
 
 ### 3. Firebase Yapılandırması
 
-```bash
-# Firebase CLI ile giriş yap
-firebase login
+Proje iki farklı şekilde çalıştırılabilir:
 
-# FlutterFire CLI'yı kur
-dart pub global activate flutterfire_cli
+- **Seçenek A (Mock Veri Modu - Hızlı Başlangıç):**
+  Firebase hesabı bağlamadan doğrudan test etmek için örnek şablonu kopyalayın:
+  ```bash
+  cp lib/firebase_options.dart.example lib/firebase_options.dart
+  ```
+  *Uygulama Firebase başlatılamadığında otomatik olarak bellek içi Mock Veritabanı moduna geçer ve tüm özellikleri sorunsuz deneyimlemenizi sağlar.*
 
-# Firebase projesini yapılandır
-flutterfire configure
-```
+- **Seçenek B (Gerçek Firebase Projesi):**
+  ```bash
+  dart pub global activate flutterfire_cli
+  flutterfire configure
+  ```
 
-> `firebase_options.dart` dosyası bu adımda otomatik oluşturulur.
+### 4. Kod Üretimini Çalıştırın (Freezed)
 
-Uygulama Firebase başlatılamadığında mock veri modunda çalışabilir. Gerçek veriler için Firebase Authentication ve Cloud Firestore'u etkinleştirin. Grup dersleri sorguları uygulama tarafında sıralandığı için ayrıca composite index kurulması gerekmez.
-
-### 4. Kodu Üret (Freezed Modeller)
+Modellerin `.freezed.dart` ve `.g.dart` kodlarını üretmek için:
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-### 5. Uygulamayı Çalıştır
+### 5. Uygulamayı Başlatın
 
 ```bash
-# iOS Simülatörde
-flutter run
-
-# Belirli bir cihazda
-flutter run -d <device_id>
-
-# Mevcut cihazları listele
+# Mevcut cihazları listeleyin
 flutter devices
+
+# iOS Simülatöründe çalıştırın (Örn: iPhone 17)
+flutter run -d "iPhone 17"
+
+# Android Emülatör veya cihazda çalıştırın
+flutter run
 ```
 
 ---
 
-## 🏗️ Derleme (Production)
+## 🧪 Test ve Kalite Kontrolü
+
+DersHub projesinde statik analiz ve birim/widget testleri tam uyumlulukla geçer:
 
 ```bash
-# Android APK
-flutter build apk --release
-
-# Android App Bundle
-flutter build appbundle --release
-
-# iOS
-flutter build ipa --release
-```
-
----
-
-## 🔧 Kod Üretimi
-
-Model sınıflarında değişiklik yaptığınızda aşağıdaki komutu çalıştırın:
-
-```bash
-# Tek seferlik
-dart run build_runner build --delete-conflicting-outputs
-
-# İzleme modunda (geliştirme sırasında)
-dart run build_runner watch --delete-conflicting-outputs
-```
-
----
-
-## 🧪 Test
-
-```bash
-# Tüm testleri çalıştır
-flutter test
-
-# Belirli bir test dosyası
-flutter test test/widget_test.dart
-
-# Statik analiz
+# Kod analizi (0 warnings, 0 errors)
 flutter analyze
 
-# Sadece öğrenci ekranını analiz et
-flutter analyze lib/features/students/students_view.dart
+# Otomatik testleri çalıştırın
+flutter test
+
+# Belirli bir testi çalıştırın
+flutter test test/report_test.dart
 ```
 
 ---
 
-## 📱 Desteklenen Platformlar
+## 🔒 Güvenlik Notları
 
-| Platform | Durum |
-|---|---|
-| 📱 iOS | ✅ Destekleniyor |
-| 🤖 Android | ✅ Destekleniyor |
-| 🌐 Web | ⚠️ Kısmi destek |
+- **API Anahtarları:** `lib/firebase_options.dart` ve gizli ortam dosyaları `.gitignore` ile korunmaktadır. Açık kaynak repoya yüklenmez.
+- **Dağıtım İmzaları:** Android için `key.properties`, `*.keystore` ve iOS için `*.p12` sertifikaları sürüm kontrolü dışındadır.
+- **Firebase Kısıtlamaları:** Google Cloud Console üzerinden API anahtarlarınıza paket adı (`com.example.dershub`) ve Bundle ID kısıtlamaları eklenmesi tavsiye edilir.
 
 ---
 
 ## 🎨 Tasarım Sistemi
 
-Uygulama, tutarlı bir görsel dil için merkezi bir tasarım sistemi kullanır:
-
-- **Primary:** `#6B4EFF` (Mor)
-- **Secondary:** `#00C9A7` (Yeşil-Turkuaz)
-- **Accent:** `#FFB547` (Turuncu)
-- **Success:** `#10B981`
-- **Error:** `#FF5252`
-- **Karanlık Arka Plan:** `#1A1A2E`
+- **Primary:** `#6B4EFF` (İndigo / Mor)
+- **Secondary:** `#00C9A7` (Zümrüt Yeşili)
+- **Accent:** `#FFB547` (Amber Turuncu)
+- **Success:** `#10B981` (Yeşil)
+- **Error:** `#FF5252` (Kırmızı)
+- **Karanlık Mod Yüzeyi:** `#1A1A2E`
 
 ---
 
 ## 📄 Lisans
 
-Bu proje özel kullanım amaçlıdır. Dağıtım hakları saklıdır.
-
----
+Bu proje özel kullanım ve geliştirme amaçlıdır. Tüm hakları saklıdır.
 
 <p align="center">
   Geliştirici: <strong>Saliha Karaman</strong> &nbsp;•&nbsp; Flutter ile ❤️ yapıldı
