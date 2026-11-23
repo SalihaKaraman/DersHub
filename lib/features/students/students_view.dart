@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants.dart';
 import '../../core/helpers.dart';
+import '../../models/lesson.dart';
 import '../../models/student.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
+import '../../services/notification_service.dart';
 import 'student_detail_view.dart';
 
 class StudentsView extends ConsumerStatefulWidget {
@@ -536,8 +540,34 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   final _nicknameController = TextEditingController();
   final _subjectController = TextEditingController();
   final _rateController = TextEditingController();
+  final _durationController = TextEditingController(text: '60');
   String _selectedGrade = '12. Sınıf';
   bool _isLoading = false;
+  bool _repeatWeekly = true;
+  DateTime _firstLessonDate = DateTime.now().add(const Duration(days: 1));
+  TimeOfDay _lessonTime = const TimeOfDay(hour: 16, minute: 0);
+
+  Future<void> _selectFirstLessonDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _firstLessonDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() => _firstLessonDate = picked);
+    }
+  }
+
+  Future<void> _selectLessonTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _lessonTime,
+    );
+    if (picked != null) {
+      setState(() => _lessonTime = picked);
+    }
+  }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -558,22 +588,66 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
       isActive: true,
     );
 
+    var studentSaved = false;
     try {
-      await ref.read(databaseServiceProvider).addStudent(newStudent);
+      final database = ref.read(databaseServiceProvider);
+      final savedStudent = await database.addStudent(newStudent);
+      studentSaved = true;
+
+      final lessonStart = DateTime(
+        _firstLessonDate.year,
+        _firstLessonDate.month,
+        _firstLessonDate.day,
+        _lessonTime.hour,
+        _lessonTime.minute,
+      );
+      final lessonCount = _repeatWeekly ? 4 : 1;
+      for (var week = 0; week < lessonCount; week++) {
+        final lessonDate = lessonStart.add(Duration(days: week * 7));
+        await database.addLesson(
+          Lesson(
+            id: '',
+            teacherId: teacherId,
+            studentId: savedStudent.id,
+            studentName: savedStudent.nickname,
+            dateTime: lessonDate,
+            durationMinutes: int.parse(_durationController.text.trim()),
+            price: savedStudent.hourlyRate *
+                (int.parse(_durationController.text.trim()) / 60),
+            topic: savedStudent.subject,
+            status: 'scheduled',
+            createdAt: DateTime.now(),
+          ),
+        );
+
+        unawaited(
+          ref.read(notificationServiceProvider).scheduleLessonReminder(
+                dateTime: lessonDate.subtract(const Duration(minutes: 30)),
+                lessonTitle: savedStudent.subject,
+                studentName: savedStudent.nickname,
+              ),
+        );
+      }
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Öğrenci başarıyla eklendi.'),
+            content: Text('Öğrenci ve haftalık ders planı eklendi.'),
             backgroundColor: AppColors.success,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        if (studentSaved) Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata oluştu: ${e.toString()}'),
+            content: Text(
+              studentSaved
+                  ? 'Öğrenci eklendi, ancak ders planı oluşturulamadı: ${e.toString()}'
+                  : 'Hata oluştu: ${e.toString()}',
+            ),
             backgroundColor: AppColors.error,
           ),
         );
@@ -592,6 +666,7 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
     _nicknameController.dispose();
     _subjectController.dispose();
     _rateController.dispose();
+    _durationController.dispose();
     super.dispose();
   }
 
@@ -684,8 +759,64 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                     hintText: 'Saatlik Ders Ücreti (TL)',
                     prefixIcon: Icon(Icons.payments_outlined),
                   ),
-                  validator: (val) =>
-                      AppHelpers.validateRequired(val, 'Saatlik Ders Ücreti'),
+                  validator: (value) {
+                    final rate = double.tryParse(value?.trim() ?? '');
+                    if (rate == null || rate < 0) {
+                      return 'Geçerli bir saatlik ücret girin.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSizes.p16),
+                Text(
+                  'İlk Ders',
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppSizes.p8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _selectFirstLessonDate,
+                        icon: const Icon(Icons.calendar_today_outlined),
+                        label: Text(AppHelpers.formatDate(_firstLessonDate)),
+                      ),
+                    ),
+                    const SizedBox(width: AppSizes.p12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _selectLessonTime,
+                        icon: const Icon(Icons.schedule_outlined),
+                        label: Text(_lessonTime.format(context)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSizes.p16),
+                TextFormField(
+                  controller: _durationController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Ders Süresi (dakika)',
+                    prefixIcon: Icon(Icons.timer_outlined),
+                  ),
+                  validator: (value) {
+                    final duration = int.tryParse(value?.trim() ?? '');
+                    if (duration == null || duration <= 0) {
+                      return 'Geçerli bir ders süresi girin.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: AppSizes.p8),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _repeatWeekly,
+                  title: const Text('Haftalık tekrarla (4 hafta)'),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: (value) {
+                    setState(() => _repeatWeekly = value ?? false);
+                  },
                 ),
                 const SizedBox(height: AppSizes.p24),
                 ElevatedButton(

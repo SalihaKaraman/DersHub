@@ -54,8 +54,8 @@ class DatabaseService {
   final List<Note> _mockNotes = [];
 
   DatabaseService(this._ref)
-    : _authService = _ref.watch(authServiceProvider),
-      _firestore = _initFirestore() {
+      : _authService = _ref.watch(authServiceProvider),
+        _firestore = _initFirestore() {
     if (_firestore == null || _authService.isMockMode) {
       _useMockMode = true;
       _populateMockData();
@@ -266,13 +266,13 @@ class DatabaseService {
           .collection('students')
           .snapshots()
           .map((snapshot) {
-            final list = snapshot.docs
-                .map((doc) => Student.fromMap(doc.data(), doc.id))
-                .toList();
-            // Sort client-side to avoid Firestore index requirements
-            list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            return list;
-          });
+        final list = snapshot.docs
+            .map((doc) => Student.fromMap(doc.data(), doc.id))
+            .toList();
+        // Sort client-side to avoid Firestore index requirements
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
     }
   }
 
@@ -286,17 +286,20 @@ class DatabaseService {
           .collection('lessons')
           .snapshots()
           .map((snapshot) {
-            final list = snapshot.docs.map((doc) {
+        final list = snapshot.docs
+            .map((doc) {
               try {
                 return Lesson.fromMap(doc.data(), doc.id);
               } catch (e) {
                 return null;
               }
-            }).whereType<Lesson>().toList();
-            // Sort client-side to avoid Firestore index requirements
-            list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
-            return list;
-          });
+            })
+            .whereType<Lesson>()
+            .toList();
+        // Sort client-side to avoid Firestore index requirements
+        list.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+        return list;
+      });
     }
   }
 
@@ -310,17 +313,20 @@ class DatabaseService {
           .collection('payments')
           .snapshots()
           .map((snapshot) {
-            final list = snapshot.docs.map((doc) {
+        final list = snapshot.docs
+            .map((doc) {
               try {
                 return Payment.fromMap(doc.data(), doc.id);
               } catch (e) {
                 return null;
               }
-            }).whereType<Payment>().toList();
-            // Sort client-side to avoid Firestore index requirements
-            list.sort((a, b) => b.dueDate.compareTo(a.dueDate));
-            return list;
-          });
+            })
+            .whereType<Payment>()
+            .toList();
+        // Sort client-side to avoid Firestore index requirements
+        list.sort((a, b) => b.dueDate.compareTo(a.dueDate));
+        return list;
+      });
     }
   }
 
@@ -334,24 +340,27 @@ class DatabaseService {
           .collection('notes')
           .snapshots()
           .map((snapshot) {
-            final list = snapshot.docs.map((doc) {
+        final list = snapshot.docs
+            .map((doc) {
               try {
                 return Note.fromMap(doc.data(), doc.id);
               } catch (e) {
                 return null;
               }
-            }).whereType<Note>().toList();
-            // Sort client-side to avoid Firestore index requirements
-            list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            return list;
-          });
+            })
+            .whereType<Note>()
+            .toList();
+        // Sort client-side to avoid Firestore index requirements
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      });
     }
   }
 
   // --- Mutations (Add / Edit / Delete) ---
 
   // STUDENTS
-  Future<void> addStudent(Student student) async {
+  Future<Student> addStudent(Student student) async {
     if (_useMockMode) {
       final newStudent = student.copyWith(
         id: 's_${DateTime.now().millisecondsSinceEpoch}',
@@ -363,8 +372,9 @@ class DatabaseService {
             .read(notificationServiceProvider)
             .sendWelcomeNotification(studentName: student.nickname);
       }
+      return newStudent;
     } else {
-      await _firestore!
+      final studentRef = await _firestore!
           .collection('teachers')
           .doc(_uid)
           .collection('students')
@@ -374,6 +384,7 @@ class DatabaseService {
             .read(notificationServiceProvider)
             .sendWelcomeNotification(studentName: student.nickname);
       }
+      return student.copyWith(id: studentRef.id);
     }
   }
 
@@ -433,9 +444,7 @@ class DatabaseService {
       _mockPayments.insert(0, newPayment);
       _paymentsController.add(List.from(_mockPayments));
       if (_ref.read(notificationsEnabledProvider)) {
-        await _ref
-            .read(notificationServiceProvider)
-            .schedulePaymentReminder(
+        await _ref.read(notificationServiceProvider).schedulePaymentReminder(
               dateTime: lesson.dateTime,
               studentName: lesson.studentName,
             );
@@ -465,9 +474,7 @@ class DatabaseService {
           .collection('payments')
           .add(payment.toMap());
       if (_ref.read(notificationsEnabledProvider)) {
-        await _ref
-            .read(notificationServiceProvider)
-            .schedulePaymentReminder(
+        await _ref.read(notificationServiceProvider).schedulePaymentReminder(
               dateTime: lesson.dateTime,
               studentName: lesson.studentName,
             );
@@ -576,9 +583,9 @@ class DatabaseService {
           .collection('payments')
           .doc(paymentId)
           .update({
-            'status': 'paid',
-            'paymentDate': DateTime.now().toIso8601String(),
-          });
+        'status': 'paid',
+        'paymentDate': DateTime.now().toIso8601String(),
+      });
     }
   }
 
