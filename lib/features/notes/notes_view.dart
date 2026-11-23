@@ -108,8 +108,21 @@ class NoteGridTile extends ConsumerWidget {
         ? noteBaseColor.withValues(alpha: 0.4)
         : noteBaseColor.withValues(alpha: 0.15);
 
-    return Container(
-      decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: () {
+        final students = ref.read(studentsStreamProvider).value ?? [];
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => AddNoteSheet(
+            students: students,
+            noteToEdit: note,
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(AppSizes.r20),
         border: Border.all(color: borderColor, width: 1.5),
@@ -176,7 +189,7 @@ class NoteGridTile extends ConsumerWidget {
 
               const SizedBox(height: 6),
 
-              // Date stamp and delete icon footer
+              // Date stamp and action icons footer
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -188,41 +201,68 @@ class NoteGridTile extends ConsumerWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Notu Sil'),
-                          content: const Text(
-                            'Bu notu silmek istediğinize emin misiniz?',
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('İptal'),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          final students =
+                              ref.read(studentsStreamProvider).value ?? [];
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => AddNoteSheet(
+                              students: students,
+                              noteToEdit: note,
                             ),
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text(
-                                'Sil',
-                                style: TextStyle(color: AppColors.error),
-                              ),
-                            ),
-                          ],
+                          );
+                        },
+                        child: const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.grey,
+                          size: 16,
                         ),
-                      );
-                      if (confirmed == true) {
-                        await ref
-                            .read(databaseServiceProvider)
-                            .deleteNote(note.id);
-                      }
-                    },
-                    child: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: AppColors.error,
-                      size: 16,
-                    ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Notu Sil'),
+                              content: const Text(
+                                'Bu notu silmek istediğinize emin misiniz?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text('İptal'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text(
+                                    'Sil',
+                                    style: TextStyle(color: AppColors.error),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true) {
+                            await ref
+                                .read(databaseServiceProvider)
+                                .deleteNote(note.id);
+                          }
+                        },
+                        child: const Icon(
+                          Icons.delete_outline_rounded,
+                          color: AppColors.error,
+                          size: 16,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -230,14 +270,20 @@ class NoteGridTile extends ConsumerWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
 
 class AddNoteSheet extends ConsumerStatefulWidget {
   final List<Student> students;
+  final Note? noteToEdit;
 
-  const AddNoteSheet({super.key, required this.students});
+  const AddNoteSheet({
+    super.key,
+    required this.students,
+    this.noteToEdit,
+  });
 
   @override
   ConsumerState<AddNoteSheet> createState() => _AddNoteSheetState();
@@ -261,6 +307,24 @@ class _AddNoteSheetState extends ConsumerState<AddNoteSheet> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.noteToEdit != null) {
+      _titleController.text = widget.noteToEdit!.title;
+      _contentController.text = widget.noteToEdit!.content;
+      _selectedColorValue = widget.noteToEdit!.colorValue;
+      if (widget.noteToEdit!.studentId != null) {
+        for (final s in widget.students) {
+          if (s.id == widget.noteToEdit!.studentId) {
+            _selectedStudent = s;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
@@ -273,6 +337,45 @@ class _AddNoteSheetState extends ConsumerState<AddNoteSheet> {
     setState(() {
       _isLoading = true;
     });
+
+    if (widget.noteToEdit != null) {
+      final updated = widget.noteToEdit!.copyWith(
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
+        studentId: _selectedStudent?.id,
+        studentName: _selectedStudent?.nickname,
+        colorValue: _selectedColorValue,
+      );
+
+      try {
+        await ref.read(databaseServiceProvider).updateNote(updated);
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Not başarıyla güncellendi.'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Hata oluştu: ${e.toString()}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+      return;
+    }
 
     final note = Note(
       id: '',
@@ -341,7 +444,12 @@ class _AddNoteSheetState extends ConsumerState<AddNoteSheet> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Yeni Not Oluştur', style: theme.textTheme.titleLarge),
+                    Text(
+                      widget.noteToEdit != null
+                          ? 'Notu Düzenle'
+                          : 'Yeni Not Oluştur',
+                      style: theme.textTheme.titleLarge,
+                    ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded),
                       onPressed: () => Navigator.pop(context),
@@ -469,7 +577,11 @@ class _AddNoteSheetState extends ConsumerState<AddNoteSheet> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Text('Notu Kaydet'),
+                      : Text(
+                          widget.noteToEdit != null
+                              ? 'Güncelle'
+                              : 'Notu Kaydet',
+                        ),
                 ),
               ],
             ),

@@ -146,26 +146,168 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     await ref.read(databaseServiceProvider).addLesson(lesson);
   }
 
-  Future<void> _addNote() async {
-    final titleController = TextEditingController();
-    final contentController = TextEditingController();
+  Future<void> _showNoteDialog({Note? noteToEdit}) async {
+    final isEditing = noteToEdit != null;
+    final titleController =
+        TextEditingController(text: noteToEdit?.title ?? '');
+    final contentController =
+        TextEditingController(text: noteToEdit?.content ?? '');
+    int selectedColor = noteToEdit?.colorValue ?? 0xFF4F46E5;
+
+    final List<int> colorPalette = [
+      0xFF4F46E5, // Indigo
+      0xFF0D9488, // Emerald Teal
+      0xFFF59E0B, // Amber
+      0xFFE11D48, // Rose Red
+      0xFF9333EA, // Purple
+    ];
+
     final result = await showDialog<bool>(
       context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.r20),
+            ),
+            title: Text(isEditing ? 'Notu Düzenle' : 'Yeni Not Ekle'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Başlık',
+                      hintText: 'Not başlığı girin...',
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.p12),
+                  TextField(
+                    controller: contentController,
+                    maxLines: 4,
+                    minLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'İçerik',
+                      hintText: 'Not içeriğini girin...',
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.p16),
+                  const Text(
+                    'Renk Seçin',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.p8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: colorPalette.map((colorVal) {
+                      final isSelected = selectedColor == colorVal;
+                      return GestureDetector(
+                        onTap: () {
+                          setDialogState(() {
+                            selectedColor = colorVal;
+                          });
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Color(colorVal),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.black87
+                                  : Colors.transparent,
+                              width: 2.5,
+                            ),
+                          ),
+                          child: isSelected
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 16,
+                                )
+                              : null,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('İptal'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (titleController.text.trim().isEmpty &&
+                      contentController.text.trim().isEmpty) {
+                    return;
+                  }
+                  Navigator.pop(context, true);
+                },
+                child: Text(isEditing ? 'Kaydet' : 'Ekle'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result != true) return;
+
+    if (isEditing) {
+      final updatedNote = noteToEdit.copyWith(
+        title: titleController.text.trim(),
+        content: contentController.text.trim(),
+        colorValue: selectedColor,
+      );
+      await ref.read(databaseServiceProvider).updateNote(updatedNote);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Not başarıyla güncellendi.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } else {
+      final note = Note(
+        id: '',
+        title: titleController.text.trim(),
+        content: contentController.text.trim(),
+        studentId: widget.student.id,
+        studentName: widget.student.nickname,
+        createdAt: DateTime.now(),
+        colorValue: selectedColor,
+      );
+      await ref.read(databaseServiceProvider).addNote(note);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Not başarıyla eklendi.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteNote(Note note) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Yeni Not Ekle'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(hintText: 'Başlık'),
-            ),
-            const SizedBox(height: AppSizes.p12),
-            TextField(
-              controller: contentController,
-              decoration: const InputDecoration(hintText: 'İçerik'),
-            ),
-          ],
+        title: const Text('Notu Sil'),
+        content: Text(
+          note.title.isNotEmpty
+              ? '"${note.title}" başlıklı not silinecek. Onaylıyor musunuz?'
+              : 'Bu not silinecek. Onaylıyor musunuz?',
         ),
         actions: [
           TextButton(
@@ -174,24 +316,26 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ekle'),
+            child: const Text(
+              'Sil',
+              style: TextStyle(color: AppColors.error),
+            ),
           ),
         ],
       ),
     );
 
-    if (result != true) return;
-
-    final note = Note(
-      id: '',
-      title: titleController.text.trim(),
-      content: contentController.text.trim(),
-      studentId: widget.student.id,
-      studentName: widget.student.nickname,
-      createdAt: DateTime.now(),
-    );
-
-    await ref.read(databaseServiceProvider).addNote(note);
+    if (confirmed == true) {
+      await ref.read(databaseServiceProvider).deleteNote(note.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Not silindi.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _showMessageDialog() async {
@@ -967,20 +1111,85 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               final Note note = items[i];
                               return Card(
                                 color: Color(note.colorValue),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppSizes.r16),
+                                ),
                                 child: ListTile(
+                                  onTap: () =>
+                                      _showNoteDialog(noteToEdit: note),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: AppSizes.p16,
+                                    vertical: AppSizes.p8,
+                                  ),
                                   title: Text(
-                                    note.title,
-                                    style: const TextStyle(color: Colors.white),
+                                    note.title.isNotEmpty
+                                        ? note.title
+                                        : 'Başlıksız Not',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                  subtitle: Text(
-                                    note.content,
-                                    style:
-                                        const TextStyle(color: Colors.white70),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (note.content.isNotEmpty) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          note.content,
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.access_time_rounded,
+                                            size: 13,
+                                            color: Colors.white60,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _formatDate(note.createdAt),
+                                            style: const TextStyle(
+                                              color: Colors.white60,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                  trailing: Text(
-                                    _formatDate(note.createdAt),
-                                    style:
-                                        const TextStyle(color: Colors.white70),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit_outlined,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        tooltip: 'Düzenle',
+                                        onPressed: () => _showNoteDialog(
+                                          noteToEdit: note,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                        tooltip: 'Sil',
+                                        onPressed: () => _deleteNote(note),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               );
@@ -991,7 +1200,7 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                       right: AppSizes.p16,
                       child: FloatingActionButton.extended(
                         heroTag: 'fab-note-${widget.student.id}',
-                        onPressed: _addNote,
+                        onPressed: () => _showNoteDialog(),
                         label: const Text('Yeni Not Ekle'),
                         icon: const Icon(Icons.note_add_rounded),
                         backgroundColor: AppColors.primary,

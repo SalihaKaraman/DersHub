@@ -606,6 +606,23 @@ class DatabaseService {
     }
   }
 
+  Future<void> updateNote(Note note) async {
+    if (_useMockMode) {
+      final index = _mockNotes.indexWhere((n) => n.id == note.id);
+      if (index != -1) {
+        _mockNotes[index] = note;
+        _notesController.add(List.from(_mockNotes));
+      }
+    } else {
+      await _firestore!
+          .collection('teachers')
+          .doc(_uid)
+          .collection('notes')
+          .doc(note.id)
+          .update(note.toMap());
+    }
+  }
+
   Future<void> deleteNote(String noteId) async {
     if (_useMockMode) {
       _mockNotes.removeWhere((n) => n.id == noteId);
