@@ -18,6 +18,8 @@ class Student with _$Student {
     String? phoneNumber,
     @Default(false) bool useCustomFeePolicy,
     FeePolicy? customFeePolicy,
+    // FAZ 2 — bekleyen telafi ders sayısı
+    @Default(0) int pendingCompensationCount,
   }) = _Student;
 
   const Student._();

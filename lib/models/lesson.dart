@@ -24,6 +24,12 @@ class Lesson with _$Lesson {
     double? calculatedCharge,
     double? chargePercentage,
     @Default(false) bool createsCompensation,
+    // FAZ 2 — erteleme bağlantıları
+    String? rescheduleFromLessonId,  // bu ders hangi dersin ertelemesinden oluştu
+    String? rescheduleToLessonId,    // bu ders hangi derse ertelendi
+    // FAZ 2 — telafi dersi mi?
+    @Default(false) bool isCompensation,
+    String? compensationForLessonId, // hangi öğretmen iptalinin telafidir
   }) = _Lesson;
 
   const Lesson._();
