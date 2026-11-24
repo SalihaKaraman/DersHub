@@ -21,6 +21,8 @@ _$StudentImpl _$$StudentImplFromJson(Map<String, dynamic> json) =>
       customFeePolicy: json['customFeePolicy'] == null
           ? null
           : FeePolicy.fromJson(json['customFeePolicy'] as Map<String, dynamic>),
+      pendingCompensationCount:
+          (json['pendingCompensationCount'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$$StudentImplToJson(_$StudentImpl instance) =>
@@ -36,4 +38,5 @@ Map<String, dynamic> _$$StudentImplToJson(_$StudentImpl instance) =>
       'phoneNumber': instance.phoneNumber,
       'useCustomFeePolicy': instance.useCustomFeePolicy,
       'customFeePolicy': instance.customFeePolicy,
+      'pendingCompensationCount': instance.pendingCompensationCount,
     };

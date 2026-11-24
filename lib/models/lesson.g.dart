@@ -26,6 +26,10 @@ _$LessonImpl _$$LessonImplFromJson(Map<String, dynamic> json) => _$LessonImpl(
       calculatedCharge: (json['calculatedCharge'] as num?)?.toDouble(),
       chargePercentage: (json['chargePercentage'] as num?)?.toDouble(),
       createsCompensation: json['createsCompensation'] as bool? ?? false,
+      rescheduleFromLessonId: json['rescheduleFromLessonId'] as String?,
+      rescheduleToLessonId: json['rescheduleToLessonId'] as String?,
+      isCompensation: json['isCompensation'] as bool? ?? false,
+      compensationForLessonId: json['compensationForLessonId'] as String?,
     );
 
 Map<String, dynamic> _$$LessonImplToJson(_$LessonImpl instance) =>
@@ -47,4 +51,8 @@ Map<String, dynamic> _$$LessonImplToJson(_$LessonImpl instance) =>
       'calculatedCharge': instance.calculatedCharge,
       'chargePercentage': instance.chargePercentage,
       'createsCompensation': instance.createsCompensation,
+      'rescheduleFromLessonId': instance.rescheduleFromLessonId,
+      'rescheduleToLessonId': instance.rescheduleToLessonId,
+      'isCompensation': instance.isCompensation,
+      'compensationForLessonId': instance.compensationForLessonId,
     };

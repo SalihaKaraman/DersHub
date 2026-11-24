@@ -591,6 +591,11 @@ class DatabaseService {
           createsCompensation: feeResult.createsCompensation,
         );
         _lessonsController.add(List.from(_mockLessons));
+
+        // FAZ 2: Öğretmen iptal → telafi hakkı otomatik oluştur
+        if (feeResult.createsCompensation && lesson.studentId.isNotEmpty) {
+          await incrementCompensationCount(lesson.studentId);
+        }
       }
     } else {
       final lessonDoc = await _firestore!
@@ -657,7 +662,211 @@ class DatabaseService {
           'chargePercentage': feeResult.chargePercentage,
           'createsCompensation': feeResult.createsCompensation,
         });
+
+        // FAZ 2: Öğretmen iptal → telafi hakkı otomatik oluştur
+        if (feeResult.createsCompensation && lesson.studentId.isNotEmpty) {
+          await incrementCompensationCount(lesson.studentId);
+        }
       }
+    }
+  }
+
+  /// FAZ 2: Orijinal dersi 'rescheduled' yapıp yeni ders oluşturur.
+  /// İki ders birbirine [rescheduleFromLessonId] / [rescheduleToLessonId] ile bağlanır.
+  Future<Lesson> rescheduleLesson({
+    required String originalLessonId,
+    required DateTime newDateTime,
+    String? reason,
+    FeePolicy? explicitPolicy,
+  }) async {
+    final now = DateTime.now();
+
+    if (_useMockMode) {
+      final index = _mockLessons.indexWhere((l) => l.id == originalLessonId);
+      if (index == -1) throw Exception('Ders bulunamadı: $originalLessonId');
+
+      final original = _mockLessons[index];
+
+      // Yeni dersin ID'si
+      final newId = 'l_rescheduled_${now.millisecondsSinceEpoch}';
+
+      // Orijinali 'rescheduled' durumuna çek ve yeni derse bağla
+      _mockLessons[index] = original.copyWith(
+        status: LessonStatus.rescheduled.name,
+        isCompleted: false,
+        statusUpdatedAt: now,
+        cancellationReason: reason,
+        rescheduleToLessonId: newId,
+      );
+
+      // Yeni ders
+      final newLesson = original.copyWith(
+        id: newId,
+        dateTime: newDateTime,
+        status: LessonStatus.scheduled.name,
+        isCompleted: false,
+        statusUpdatedAt: null,
+        cancellationReason: null,
+        calculatedCharge: null,
+        chargePercentage: null,
+        createsCompensation: false,
+        rescheduleFromLessonId: originalLessonId,
+        rescheduleToLessonId: null,
+        isCompensation: false,
+        compensationForLessonId: null,
+        createdAt: now,
+      );
+      _mockLessons.add(newLesson);
+      _mockLessons.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      _lessonsController.add(List.from(_mockLessons));
+      return newLesson;
+    } else {
+      final lessonDoc = await _firestore!
+          .collection('teachers')
+          .doc(_uid)
+          .collection('lessons')
+          .doc(originalLessonId)
+          .get();
+
+      if (!lessonDoc.exists || lessonDoc.data() == null) {
+        throw Exception('Ders bulunamadı: $originalLessonId');
+      }
+
+      final original = Lesson.fromMap(lessonDoc.data()!, lessonDoc.id);
+
+      // Yeni ders referansı (önce oluşturup ID alalım)
+      final newRef = _firestore!
+          .collection('teachers')
+          .doc(_uid)
+          .collection('lessons')
+          .doc();
+
+      final newLesson = original.copyWith(
+        id: newRef.id,
+        dateTime: newDateTime,
+        status: LessonStatus.scheduled.name,
+        isCompleted: false,
+        statusUpdatedAt: null,
+        cancellationReason: null,
+        calculatedCharge: null,
+        chargePercentage: null,
+        createsCompensation: false,
+        rescheduleFromLessonId: originalLessonId,
+        rescheduleToLessonId: null,
+        isCompensation: false,
+        compensationForLessonId: null,
+        createdAt: now,
+      );
+
+      // Batch write
+      final batch = _firestore!.batch();
+      batch.update(
+        _firestore!
+            .collection('teachers')
+            .doc(_uid)
+            .collection('lessons')
+            .doc(originalLessonId),
+        {
+          'status': LessonStatus.rescheduled.name,
+          'isCompleted': false,
+          'statusUpdatedAt': now.toIso8601String(),
+          'cancellationReason': reason,
+          'rescheduleToLessonId': newRef.id,
+        },
+      );
+      final newMap = newLesson.toMap();
+      newMap['id'] = newRef.id; // toMap() removes id, re-add for doc set
+      batch.set(newRef, newLesson.toMap());
+      await batch.commit();
+      return newLesson;
+    }
+  }
+
+  /// FAZ 2: Öğrencinin bekleyen telafi sayısını 1 artırır.
+  Future<void> incrementCompensationCount(String studentId) async {
+    if (_useMockMode) {
+      final index = _mockStudents.indexWhere((s) => s.id == studentId);
+      if (index != -1) {
+        _mockStudents[index] = _mockStudents[index].copyWith(
+          pendingCompensationCount:
+              _mockStudents[index].pendingCompensationCount + 1,
+        );
+        _studentsController.add(List.from(_mockStudents));
+      }
+    } else {
+      await _firestore!
+          .collection('teachers')
+          .doc(_uid)
+          .collection('students')
+          .doc(studentId)
+          .update({
+        'pendingCompensationCount': FieldValue.increment(1),
+      });
+    }
+  }
+
+  /// FAZ 2: Telafi dersini gerçek derse dönüştürür; pendingCompensationCount'u azaltır.
+  Future<Lesson> createCompensationLesson({
+    required Student student,
+    required String teacherId,
+    required DateTime dateTime,
+    int durationMinutes = 60,
+    String? compensationForLessonId,
+  }) async {
+    final now = DateTime.now();
+
+    final compensationLesson = Lesson(
+      id: '',
+      teacherId: teacherId,
+      studentId: student.id,
+      studentName: student.nickname,
+      dateTime: dateTime,
+      durationMinutes: durationMinutes,
+      price: 0, // Telafi ücretsiz
+      topic: 'Telafi Dersi',
+      status: LessonStatus.scheduled.name,
+      isCompleted: false,
+      notes: '',
+      createdAt: now,
+      isCompensation: true,
+      compensationForLessonId: compensationForLessonId,
+    );
+
+    if (_useMockMode) {
+      final newId = 'l_comp_${now.millisecondsSinceEpoch}';
+      final created = compensationLesson.copyWith(id: newId);
+      _mockLessons.add(created);
+      _mockLessons.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      _lessonsController.add(List.from(_mockLessons));
+
+      // Telafi sayısını azalt
+      final idx = _mockStudents.indexWhere((s) => s.id == student.id);
+      if (idx != -1) {
+        final current = _mockStudents[idx].pendingCompensationCount;
+        _mockStudents[idx] = _mockStudents[idx].copyWith(
+          pendingCompensationCount: (current - 1).clamp(0, 999),
+        );
+        _studentsController.add(List.from(_mockStudents));
+      }
+      return created;
+    } else {
+      final lessonRef = await _firestore!
+          .collection('teachers')
+          .doc(_uid)
+          .collection('lessons')
+          .add(compensationLesson.toMap());
+
+      // Telafi sayısını azalt
+      await _firestore!
+          .collection('teachers')
+          .doc(_uid)
+          .collection('students')
+          .doc(student.id)
+          .update({
+        'pendingCompensationCount': FieldValue.increment(-1),
+      });
+
+      return compensationLesson.copyWith(id: lessonRef.id);
     }
   }
 

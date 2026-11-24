@@ -36,7 +36,15 @@ mixin _$Lesson {
   String? get cancellationReason => throw _privateConstructorUsedError;
   double? get calculatedCharge => throw _privateConstructorUsedError;
   double? get chargePercentage => throw _privateConstructorUsedError;
-  bool get createsCompensation => throw _privateConstructorUsedError;
+  bool get createsCompensation =>
+      throw _privateConstructorUsedError; // FAZ 2 — erteleme bağlantıları
+  String? get rescheduleFromLessonId =>
+      throw _privateConstructorUsedError; // bu ders hangi dersin ertelemesinden oluştu
+  String? get rescheduleToLessonId =>
+      throw _privateConstructorUsedError; // bu ders hangi derse ertelendi
+// FAZ 2 — telafi dersi mi?
+  bool get isCompensation => throw _privateConstructorUsedError;
+  String? get compensationForLessonId => throw _privateConstructorUsedError;
 
   /// Serializes this Lesson to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -69,7 +77,11 @@ abstract class $LessonCopyWith<$Res> {
       String? cancellationReason,
       double? calculatedCharge,
       double? chargePercentage,
-      bool createsCompensation});
+      bool createsCompensation,
+      String? rescheduleFromLessonId,
+      String? rescheduleToLessonId,
+      bool isCompensation,
+      String? compensationForLessonId});
 }
 
 /// @nodoc
@@ -104,6 +116,10 @@ class _$LessonCopyWithImpl<$Res, $Val extends Lesson>
     Object? calculatedCharge = freezed,
     Object? chargePercentage = freezed,
     Object? createsCompensation = null,
+    Object? rescheduleFromLessonId = freezed,
+    Object? rescheduleToLessonId = freezed,
+    Object? isCompensation = null,
+    Object? compensationForLessonId = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -174,6 +190,22 @@ class _$LessonCopyWithImpl<$Res, $Val extends Lesson>
           ? _value.createsCompensation
           : createsCompensation // ignore: cast_nullable_to_non_nullable
               as bool,
+      rescheduleFromLessonId: freezed == rescheduleFromLessonId
+          ? _value.rescheduleFromLessonId
+          : rescheduleFromLessonId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rescheduleToLessonId: freezed == rescheduleToLessonId
+          ? _value.rescheduleToLessonId
+          : rescheduleToLessonId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isCompensation: null == isCompensation
+          ? _value.isCompensation
+          : isCompensation // ignore: cast_nullable_to_non_nullable
+              as bool,
+      compensationForLessonId: freezed == compensationForLessonId
+          ? _value.compensationForLessonId
+          : compensationForLessonId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -202,7 +234,11 @@ abstract class _$$LessonImplCopyWith<$Res> implements $LessonCopyWith<$Res> {
       String? cancellationReason,
       double? calculatedCharge,
       double? chargePercentage,
-      bool createsCompensation});
+      bool createsCompensation,
+      String? rescheduleFromLessonId,
+      String? rescheduleToLessonId,
+      bool isCompensation,
+      String? compensationForLessonId});
 }
 
 /// @nodoc
@@ -235,6 +271,10 @@ class __$$LessonImplCopyWithImpl<$Res>
     Object? calculatedCharge = freezed,
     Object? chargePercentage = freezed,
     Object? createsCompensation = null,
+    Object? rescheduleFromLessonId = freezed,
+    Object? rescheduleToLessonId = freezed,
+    Object? isCompensation = null,
+    Object? compensationForLessonId = freezed,
   }) {
     return _then(_$LessonImpl(
       id: null == id
@@ -305,6 +345,22 @@ class __$$LessonImplCopyWithImpl<$Res>
           ? _value.createsCompensation
           : createsCompensation // ignore: cast_nullable_to_non_nullable
               as bool,
+      rescheduleFromLessonId: freezed == rescheduleFromLessonId
+          ? _value.rescheduleFromLessonId
+          : rescheduleFromLessonId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rescheduleToLessonId: freezed == rescheduleToLessonId
+          ? _value.rescheduleToLessonId
+          : rescheduleToLessonId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isCompensation: null == isCompensation
+          ? _value.isCompensation
+          : isCompensation // ignore: cast_nullable_to_non_nullable
+              as bool,
+      compensationForLessonId: freezed == compensationForLessonId
+          ? _value.compensationForLessonId
+          : compensationForLessonId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -329,7 +385,11 @@ class _$LessonImpl extends _Lesson {
       this.cancellationReason,
       this.calculatedCharge,
       this.chargePercentage,
-      this.createsCompensation = false})
+      this.createsCompensation = false,
+      this.rescheduleFromLessonId,
+      this.rescheduleToLessonId,
+      this.isCompensation = false,
+      this.compensationForLessonId})
       : super._();
 
   factory _$LessonImpl.fromJson(Map<String, dynamic> json) =>
@@ -373,10 +433,23 @@ class _$LessonImpl extends _Lesson {
   @override
   @JsonKey()
   final bool createsCompensation;
+// FAZ 2 — erteleme bağlantıları
+  @override
+  final String? rescheduleFromLessonId;
+// bu ders hangi dersin ertelemesinden oluştu
+  @override
+  final String? rescheduleToLessonId;
+// bu ders hangi derse ertelendi
+// FAZ 2 — telafi dersi mi?
+  @override
+  @JsonKey()
+  final bool isCompensation;
+  @override
+  final String? compensationForLessonId;
 
   @override
   String toString() {
-    return 'Lesson(id: $id, teacherId: $teacherId, studentId: $studentId, studentName: $studentName, dateTime: $dateTime, durationMinutes: $durationMinutes, price: $price, topic: $topic, status: $status, isCompleted: $isCompleted, notes: $notes, createdAt: $createdAt, statusUpdatedAt: $statusUpdatedAt, cancellationReason: $cancellationReason, calculatedCharge: $calculatedCharge, chargePercentage: $chargePercentage, createsCompensation: $createsCompensation)';
+    return 'Lesson(id: $id, teacherId: $teacherId, studentId: $studentId, studentName: $studentName, dateTime: $dateTime, durationMinutes: $durationMinutes, price: $price, topic: $topic, status: $status, isCompleted: $isCompleted, notes: $notes, createdAt: $createdAt, statusUpdatedAt: $statusUpdatedAt, cancellationReason: $cancellationReason, calculatedCharge: $calculatedCharge, chargePercentage: $chargePercentage, createsCompensation: $createsCompensation, rescheduleFromLessonId: $rescheduleFromLessonId, rescheduleToLessonId: $rescheduleToLessonId, isCompensation: $isCompensation, compensationForLessonId: $compensationForLessonId)';
   }
 
   @override
@@ -412,30 +485,44 @@ class _$LessonImpl extends _Lesson {
             (identical(other.chargePercentage, chargePercentage) ||
                 other.chargePercentage == chargePercentage) &&
             (identical(other.createsCompensation, createsCompensation) ||
-                other.createsCompensation == createsCompensation));
+                other.createsCompensation == createsCompensation) &&
+            (identical(other.rescheduleFromLessonId, rescheduleFromLessonId) ||
+                other.rescheduleFromLessonId == rescheduleFromLessonId) &&
+            (identical(other.rescheduleToLessonId, rescheduleToLessonId) ||
+                other.rescheduleToLessonId == rescheduleToLessonId) &&
+            (identical(other.isCompensation, isCompensation) ||
+                other.isCompensation == isCompensation) &&
+            (identical(
+                    other.compensationForLessonId, compensationForLessonId) ||
+                other.compensationForLessonId == compensationForLessonId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      teacherId,
-      studentId,
-      studentName,
-      dateTime,
-      durationMinutes,
-      price,
-      topic,
-      status,
-      isCompleted,
-      notes,
-      createdAt,
-      statusUpdatedAt,
-      cancellationReason,
-      calculatedCharge,
-      chargePercentage,
-      createsCompensation);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        teacherId,
+        studentId,
+        studentName,
+        dateTime,
+        durationMinutes,
+        price,
+        topic,
+        status,
+        isCompleted,
+        notes,
+        createdAt,
+        statusUpdatedAt,
+        cancellationReason,
+        calculatedCharge,
+        chargePercentage,
+        createsCompensation,
+        rescheduleFromLessonId,
+        rescheduleToLessonId,
+        isCompensation,
+        compensationForLessonId
+      ]);
 
   /// Create a copy of Lesson
   /// with the given fields replaced by the non-null parameter values.
@@ -471,7 +558,11 @@ abstract class _Lesson extends Lesson {
       final String? cancellationReason,
       final double? calculatedCharge,
       final double? chargePercentage,
-      final bool createsCompensation}) = _$LessonImpl;
+      final bool createsCompensation,
+      final String? rescheduleFromLessonId,
+      final String? rescheduleToLessonId,
+      final bool isCompensation,
+      final String? compensationForLessonId}) = _$LessonImpl;
   const _Lesson._() : super._();
 
   factory _Lesson.fromJson(Map<String, dynamic> json) = _$LessonImpl.fromJson;
@@ -509,7 +600,17 @@ abstract class _Lesson extends Lesson {
   @override
   double? get chargePercentage;
   @override
-  bool get createsCompensation;
+  bool get createsCompensation; // FAZ 2 — erteleme bağlantıları
+  @override
+  String?
+      get rescheduleFromLessonId; // bu ders hangi dersin ertelemesinden oluştu
+  @override
+  String? get rescheduleToLessonId; // bu ders hangi derse ertelendi
+// FAZ 2 — telafi dersi mi?
+  @override
+  bool get isCompensation;
+  @override
+  String? get compensationForLessonId;
 
   /// Create a copy of Lesson
   /// with the given fields replaced by the non-null parameter values.

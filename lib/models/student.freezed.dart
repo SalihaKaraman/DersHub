@@ -30,7 +30,9 @@ mixin _$Student {
   bool get isActive => throw _privateConstructorUsedError;
   String? get phoneNumber => throw _privateConstructorUsedError;
   bool get useCustomFeePolicy => throw _privateConstructorUsedError;
-  FeePolicy? get customFeePolicy => throw _privateConstructorUsedError;
+  FeePolicy? get customFeePolicy =>
+      throw _privateConstructorUsedError; // FAZ 2 — bekleyen telafi ders sayısı
+  int get pendingCompensationCount => throw _privateConstructorUsedError;
 
   /// Serializes this Student to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -57,7 +59,8 @@ abstract class $StudentCopyWith<$Res> {
       bool isActive,
       String? phoneNumber,
       bool useCustomFeePolicy,
-      FeePolicy? customFeePolicy});
+      FeePolicy? customFeePolicy,
+      int pendingCompensationCount});
 
   $FeePolicyCopyWith<$Res>? get customFeePolicy;
 }
@@ -88,6 +91,7 @@ class _$StudentCopyWithImpl<$Res, $Val extends Student>
     Object? phoneNumber = freezed,
     Object? useCustomFeePolicy = null,
     Object? customFeePolicy = freezed,
+    Object? pendingCompensationCount = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -134,6 +138,10 @@ class _$StudentCopyWithImpl<$Res, $Val extends Student>
           ? _value.customFeePolicy
           : customFeePolicy // ignore: cast_nullable_to_non_nullable
               as FeePolicy?,
+      pendingCompensationCount: null == pendingCompensationCount
+          ? _value.pendingCompensationCount
+          : pendingCompensationCount // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 
@@ -170,7 +178,8 @@ abstract class _$$StudentImplCopyWith<$Res> implements $StudentCopyWith<$Res> {
       bool isActive,
       String? phoneNumber,
       bool useCustomFeePolicy,
-      FeePolicy? customFeePolicy});
+      FeePolicy? customFeePolicy,
+      int pendingCompensationCount});
 
   @override
   $FeePolicyCopyWith<$Res>? get customFeePolicy;
@@ -200,6 +209,7 @@ class __$$StudentImplCopyWithImpl<$Res>
     Object? phoneNumber = freezed,
     Object? useCustomFeePolicy = null,
     Object? customFeePolicy = freezed,
+    Object? pendingCompensationCount = null,
   }) {
     return _then(_$StudentImpl(
       id: null == id
@@ -246,6 +256,10 @@ class __$$StudentImplCopyWithImpl<$Res>
           ? _value.customFeePolicy
           : customFeePolicy // ignore: cast_nullable_to_non_nullable
               as FeePolicy?,
+      pendingCompensationCount: null == pendingCompensationCount
+          ? _value.pendingCompensationCount
+          : pendingCompensationCount // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -264,7 +278,8 @@ class _$StudentImpl extends _Student {
       required this.isActive,
       this.phoneNumber,
       this.useCustomFeePolicy = false,
-      this.customFeePolicy})
+      this.customFeePolicy,
+      this.pendingCompensationCount = 0})
       : super._();
 
   factory _$StudentImpl.fromJson(Map<String, dynamic> json) =>
@@ -293,10 +308,14 @@ class _$StudentImpl extends _Student {
   final bool useCustomFeePolicy;
   @override
   final FeePolicy? customFeePolicy;
+// FAZ 2 — bekleyen telafi ders sayısı
+  @override
+  @JsonKey()
+  final int pendingCompensationCount;
 
   @override
   String toString() {
-    return 'Student(id: $id, teacherId: $teacherId, nickname: $nickname, gradeLevel: $gradeLevel, subject: $subject, hourlyRate: $hourlyRate, createdAt: $createdAt, isActive: $isActive, phoneNumber: $phoneNumber, useCustomFeePolicy: $useCustomFeePolicy, customFeePolicy: $customFeePolicy)';
+    return 'Student(id: $id, teacherId: $teacherId, nickname: $nickname, gradeLevel: $gradeLevel, subject: $subject, hourlyRate: $hourlyRate, createdAt: $createdAt, isActive: $isActive, phoneNumber: $phoneNumber, useCustomFeePolicy: $useCustomFeePolicy, customFeePolicy: $customFeePolicy, pendingCompensationCount: $pendingCompensationCount)';
   }
 
   @override
@@ -323,7 +342,10 @@ class _$StudentImpl extends _Student {
             (identical(other.useCustomFeePolicy, useCustomFeePolicy) ||
                 other.useCustomFeePolicy == useCustomFeePolicy) &&
             (identical(other.customFeePolicy, customFeePolicy) ||
-                other.customFeePolicy == customFeePolicy));
+                other.customFeePolicy == customFeePolicy) &&
+            (identical(
+                    other.pendingCompensationCount, pendingCompensationCount) ||
+                other.pendingCompensationCount == pendingCompensationCount));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -340,7 +362,8 @@ class _$StudentImpl extends _Student {
       isActive,
       phoneNumber,
       useCustomFeePolicy,
-      customFeePolicy);
+      customFeePolicy,
+      pendingCompensationCount);
 
   /// Create a copy of Student
   /// with the given fields replaced by the non-null parameter values.
@@ -370,7 +393,8 @@ abstract class _Student extends Student {
       required final bool isActive,
       final String? phoneNumber,
       final bool useCustomFeePolicy,
-      final FeePolicy? customFeePolicy}) = _$StudentImpl;
+      final FeePolicy? customFeePolicy,
+      final int pendingCompensationCount}) = _$StudentImpl;
   const _Student._() : super._();
 
   factory _Student.fromJson(Map<String, dynamic> json) = _$StudentImpl.fromJson;
@@ -396,7 +420,9 @@ abstract class _Student extends Student {
   @override
   bool get useCustomFeePolicy;
   @override
-  FeePolicy? get customFeePolicy;
+  FeePolicy? get customFeePolicy; // FAZ 2 — bekleyen telafi ders sayısı
+  @override
+  int get pendingCompensationCount;
 
   /// Create a copy of Student
   /// with the given fields replaced by the non-null parameter values.
