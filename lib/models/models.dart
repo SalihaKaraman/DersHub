@@ -1,7 +1,9 @@
 export 'app_user.dart';
 export 'exam.dart';
+export 'fee_policy.dart';
 export 'group_lesson.dart';
 export 'lesson.dart';
+export 'lesson_status.dart';
 export 'note.dart';
 export 'parent.dart';
 export 'payment.dart';

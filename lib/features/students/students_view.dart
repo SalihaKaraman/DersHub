@@ -6,6 +6,7 @@ import '../../core/constants.dart';
 import '../../core/helpers.dart';
 import '../../models/lesson.dart';
 import '../../models/student.dart';
+import '../../models/fee_policy.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/notification_service.dart';
@@ -568,6 +569,11 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
   final _rateController = TextEditingController();
   final _durationController = TextEditingController(text: '60');
   final _customGradeController = TextEditingController();
+  final _customEarlyHoursController = TextEditingController(text: '24');
+  final _customLateFeeController = TextEditingController(text: '50');
+  final _customNoShowFeeController = TextEditingController(text: '100');
+  bool _useCustomPolicy = false;
+  bool _customTeacherCompensable = true;
   String _selectedGrade = '12. Sınıf';
   bool _isCustomGrade = false;
   bool _isLoading = false;
@@ -630,6 +636,19 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
         ? _customGradeController.text.trim()
         : _selectedGrade;
 
+    FeePolicy? customPolicy;
+    if (_useCustomPolicy) {
+      customPolicy = FeePolicy(
+        earlyCancellationHours:
+            int.tryParse(_customEarlyHoursController.text.trim()) ?? 24,
+        lateCancellationFeePercent:
+            double.tryParse(_customLateFeeController.text.trim()) ?? 50.0,
+        noShowFeePercent:
+            double.tryParse(_customNoShowFeeController.text.trim()) ?? 100.0,
+        teacherCancellationCompensable: _customTeacherCompensable,
+      );
+    }
+
     final newStudent = Student(
       id: '',
       teacherId: teacherId,
@@ -639,6 +658,8 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
       hourlyRate: double.tryParse(_rateController.text.trim()) ?? 0.0,
       createdAt: DateTime.now(),
       isActive: true,
+      useCustomFeePolicy: _useCustomPolicy,
+      customFeePolicy: customPolicy,
     );
 
     var studentSaved = false;
@@ -721,6 +742,9 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
     _rateController.dispose();
     _durationController.dispose();
     _customGradeController.dispose();
+    _customEarlyHoursController.dispose();
+    _customLateFeeController.dispose();
+    _customNoShowFeeController.dispose();
     super.dispose();
   }
 
@@ -921,6 +945,88 @@ class _AddStudentSheetState extends ConsumerState<AddStudentSheet> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(height: AppSizes.p16),
+                Container(
+                  padding: const EdgeInsets.all(AppSizes.p12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(AppSizes.r16),
+                    border: Border.all(
+                      color: isDark ? Colors.white12 : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text(
+                          'Öğrenciye Özel İptal & Ücret Politikası',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        subtitle: Text(
+                          _useCustomPolicy
+                              ? 'Bu öğrenci için özel iptal/kesinti kuralları uygulanır.'
+                              : 'Genel öğretmen politikası geçerlidir.',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        value: _useCustomPolicy,
+                        onChanged: (val) {
+                          setState(() => _useCustomPolicy = val);
+                        },
+                        activeThumbColor: AppColors.primary,
+                      ),
+                      if (_useCustomPolicy) ...[
+                        const Divider(height: 20),
+                        TextField(
+                          controller: _customEarlyHoursController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Erken İptal Süresi (Saat)',
+                            suffixText: 'saat',
+                            isDense: true,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _customLateFeeController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Geç İptal Ücret Oranı (%)',
+                            suffixText: '%',
+                            isDense: true,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _customNoShowFeeController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Gelmedi (No-Show) Ücret Oranı (%)',
+                            suffixText: '%',
+                            isDense: true,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Öğretmen İptalinde Telafi Hakkı',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                          value: _customTeacherCompensable,
+                          onChanged: (v) {
+                            setState(() => _customTeacherCompensable = v);
+                          },
+                          activeThumbColor: AppColors.primary,
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSizes.p8),
                 CheckboxListTile(

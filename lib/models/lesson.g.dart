@@ -19,6 +19,13 @@ _$LessonImpl _$$LessonImplFromJson(Map<String, dynamic> json) => _$LessonImpl(
       isCompleted: json['isCompleted'] as bool? ?? false,
       notes: json['notes'] as String? ?? '',
       createdAt: DateTime.parse(json['createdAt'] as String),
+      statusUpdatedAt: json['statusUpdatedAt'] == null
+          ? null
+          : DateTime.parse(json['statusUpdatedAt'] as String),
+      cancellationReason: json['cancellationReason'] as String?,
+      calculatedCharge: (json['calculatedCharge'] as num?)?.toDouble(),
+      chargePercentage: (json['chargePercentage'] as num?)?.toDouble(),
+      createsCompensation: json['createsCompensation'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$LessonImplToJson(_$LessonImpl instance) =>
@@ -35,4 +42,9 @@ Map<String, dynamic> _$$LessonImplToJson(_$LessonImpl instance) =>
       'isCompleted': instance.isCompleted,
       'notes': instance.notes,
       'createdAt': instance.createdAt.toIso8601String(),
+      'statusUpdatedAt': instance.statusUpdatedAt?.toIso8601String(),
+      'cancellationReason': instance.cancellationReason,
+      'calculatedCharge': instance.calculatedCharge,
+      'chargePercentage': instance.chargePercentage,
+      'createsCompensation': instance.createsCompensation,
     };

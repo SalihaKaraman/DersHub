@@ -32,6 +32,11 @@ mixin _$Lesson {
   bool get isCompleted => throw _privateConstructorUsedError;
   String get notes => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
+  DateTime? get statusUpdatedAt => throw _privateConstructorUsedError;
+  String? get cancellationReason => throw _privateConstructorUsedError;
+  double? get calculatedCharge => throw _privateConstructorUsedError;
+  double? get chargePercentage => throw _privateConstructorUsedError;
+  bool get createsCompensation => throw _privateConstructorUsedError;
 
   /// Serializes this Lesson to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -59,7 +64,12 @@ abstract class $LessonCopyWith<$Res> {
       String status,
       bool isCompleted,
       String notes,
-      DateTime createdAt});
+      DateTime createdAt,
+      DateTime? statusUpdatedAt,
+      String? cancellationReason,
+      double? calculatedCharge,
+      double? chargePercentage,
+      bool createsCompensation});
 }
 
 /// @nodoc
@@ -89,6 +99,11 @@ class _$LessonCopyWithImpl<$Res, $Val extends Lesson>
     Object? isCompleted = null,
     Object? notes = null,
     Object? createdAt = null,
+    Object? statusUpdatedAt = freezed,
+    Object? cancellationReason = freezed,
+    Object? calculatedCharge = freezed,
+    Object? chargePercentage = freezed,
+    Object? createsCompensation = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -139,6 +154,26 @@ class _$LessonCopyWithImpl<$Res, $Val extends Lesson>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      statusUpdatedAt: freezed == statusUpdatedAt
+          ? _value.statusUpdatedAt
+          : statusUpdatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      cancellationReason: freezed == cancellationReason
+          ? _value.cancellationReason
+          : cancellationReason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      calculatedCharge: freezed == calculatedCharge
+          ? _value.calculatedCharge
+          : calculatedCharge // ignore: cast_nullable_to_non_nullable
+              as double?,
+      chargePercentage: freezed == chargePercentage
+          ? _value.chargePercentage
+          : chargePercentage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      createsCompensation: null == createsCompensation
+          ? _value.createsCompensation
+          : createsCompensation // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -162,7 +197,12 @@ abstract class _$$LessonImplCopyWith<$Res> implements $LessonCopyWith<$Res> {
       String status,
       bool isCompleted,
       String notes,
-      DateTime createdAt});
+      DateTime createdAt,
+      DateTime? statusUpdatedAt,
+      String? cancellationReason,
+      double? calculatedCharge,
+      double? chargePercentage,
+      bool createsCompensation});
 }
 
 /// @nodoc
@@ -190,6 +230,11 @@ class __$$LessonImplCopyWithImpl<$Res>
     Object? isCompleted = null,
     Object? notes = null,
     Object? createdAt = null,
+    Object? statusUpdatedAt = freezed,
+    Object? cancellationReason = freezed,
+    Object? calculatedCharge = freezed,
+    Object? chargePercentage = freezed,
+    Object? createsCompensation = null,
   }) {
     return _then(_$LessonImpl(
       id: null == id
@@ -240,6 +285,26 @@ class __$$LessonImplCopyWithImpl<$Res>
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      statusUpdatedAt: freezed == statusUpdatedAt
+          ? _value.statusUpdatedAt
+          : statusUpdatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      cancellationReason: freezed == cancellationReason
+          ? _value.cancellationReason
+          : cancellationReason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      calculatedCharge: freezed == calculatedCharge
+          ? _value.calculatedCharge
+          : calculatedCharge // ignore: cast_nullable_to_non_nullable
+              as double?,
+      chargePercentage: freezed == chargePercentage
+          ? _value.chargePercentage
+          : chargePercentage // ignore: cast_nullable_to_non_nullable
+              as double?,
+      createsCompensation: null == createsCompensation
+          ? _value.createsCompensation
+          : createsCompensation // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -259,7 +324,12 @@ class _$LessonImpl extends _Lesson {
       this.status = 'scheduled',
       this.isCompleted = false,
       this.notes = '',
-      required this.createdAt})
+      required this.createdAt,
+      this.statusUpdatedAt,
+      this.cancellationReason,
+      this.calculatedCharge,
+      this.chargePercentage,
+      this.createsCompensation = false})
       : super._();
 
   factory _$LessonImpl.fromJson(Map<String, dynamic> json) =>
@@ -292,10 +362,21 @@ class _$LessonImpl extends _Lesson {
   final String notes;
   @override
   final DateTime createdAt;
+  @override
+  final DateTime? statusUpdatedAt;
+  @override
+  final String? cancellationReason;
+  @override
+  final double? calculatedCharge;
+  @override
+  final double? chargePercentage;
+  @override
+  @JsonKey()
+  final bool createsCompensation;
 
   @override
   String toString() {
-    return 'Lesson(id: $id, teacherId: $teacherId, studentId: $studentId, studentName: $studentName, dateTime: $dateTime, durationMinutes: $durationMinutes, price: $price, topic: $topic, status: $status, isCompleted: $isCompleted, notes: $notes, createdAt: $createdAt)';
+    return 'Lesson(id: $id, teacherId: $teacherId, studentId: $studentId, studentName: $studentName, dateTime: $dateTime, durationMinutes: $durationMinutes, price: $price, topic: $topic, status: $status, isCompleted: $isCompleted, notes: $notes, createdAt: $createdAt, statusUpdatedAt: $statusUpdatedAt, cancellationReason: $cancellationReason, calculatedCharge: $calculatedCharge, chargePercentage: $chargePercentage, createsCompensation: $createsCompensation)';
   }
 
   @override
@@ -321,7 +402,17 @@ class _$LessonImpl extends _Lesson {
                 other.isCompleted == isCompleted) &&
             (identical(other.notes, notes) || other.notes == notes) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.statusUpdatedAt, statusUpdatedAt) ||
+                other.statusUpdatedAt == statusUpdatedAt) &&
+            (identical(other.cancellationReason, cancellationReason) ||
+                other.cancellationReason == cancellationReason) &&
+            (identical(other.calculatedCharge, calculatedCharge) ||
+                other.calculatedCharge == calculatedCharge) &&
+            (identical(other.chargePercentage, chargePercentage) ||
+                other.chargePercentage == chargePercentage) &&
+            (identical(other.createsCompensation, createsCompensation) ||
+                other.createsCompensation == createsCompensation));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -339,7 +430,12 @@ class _$LessonImpl extends _Lesson {
       status,
       isCompleted,
       notes,
-      createdAt);
+      createdAt,
+      statusUpdatedAt,
+      cancellationReason,
+      calculatedCharge,
+      chargePercentage,
+      createsCompensation);
 
   /// Create a copy of Lesson
   /// with the given fields replaced by the non-null parameter values.
@@ -370,7 +466,12 @@ abstract class _Lesson extends Lesson {
       final String status,
       final bool isCompleted,
       final String notes,
-      required final DateTime createdAt}) = _$LessonImpl;
+      required final DateTime createdAt,
+      final DateTime? statusUpdatedAt,
+      final String? cancellationReason,
+      final double? calculatedCharge,
+      final double? chargePercentage,
+      final bool createsCompensation}) = _$LessonImpl;
   const _Lesson._() : super._();
 
   factory _Lesson.fromJson(Map<String, dynamic> json) = _$LessonImpl.fromJson;
@@ -399,6 +500,16 @@ abstract class _Lesson extends Lesson {
   String get notes;
   @override
   DateTime get createdAt;
+  @override
+  DateTime? get statusUpdatedAt;
+  @override
+  String? get cancellationReason;
+  @override
+  double? get calculatedCharge;
+  @override
+  double? get chargePercentage;
+  @override
+  bool get createsCompensation;
 
   /// Create a copy of Lesson
   /// with the given fields replaced by the non-null parameter values.

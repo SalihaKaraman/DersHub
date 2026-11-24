@@ -5,6 +5,7 @@ import '../../core/constants.dart';
 import '../../core/helpers.dart';
 import '../../models/student.dart';
 import '../../models/lesson.dart';
+import '../../models/fee_policy.dart';
 import '../../models/note.dart';
 import '../../models/group_lesson.dart';
 import '../../services/database_service.dart';
@@ -13,6 +14,7 @@ import '../../models/exam.dart';
 import '../../services/exam_service.dart';
 import '../../services/group_lesson_service.dart';
 import '../calendar/group_lesson_detail_dialog.dart';
+import '../calendar/lesson_detail_dialog.dart';
 import '../reports/reports_list_view.dart';
 import '../../services/messaging_service.dart';
 
@@ -36,6 +38,22 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
     final subjectController =
         TextEditingController(text: currentStudent.subject);
     final customGradeController = TextEditingController();
+
+    bool useCustomPolicy = currentStudent.useCustomFeePolicy;
+    final customEarlyHoursController = TextEditingController(
+      text: (currentStudent.customFeePolicy?.earlyCancellationHours ?? 24)
+          .toString(),
+    );
+    final customLateFeeController = TextEditingController(
+      text: (currentStudent.customFeePolicy?.lateCancellationFeePercent ?? 50.0)
+          .toStringAsFixed(0),
+    );
+    final customNoShowFeeController = TextEditingController(
+      text: (currentStudent.customFeePolicy?.noShowFeePercent ?? 100.0)
+          .toStringAsFixed(0),
+    );
+    bool customTeacherCompensable =
+        currentStudent.customFeePolicy?.teacherCancellationCompensable ?? true;
 
     const standardGrades = [
       '1. Sınıf',
@@ -171,6 +189,92 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                       prefixIcon: Icon(Icons.book_outlined),
                     ),
                   ),
+                  const SizedBox(height: AppSizes.p16),
+                  Container(
+                    padding: const EdgeInsets.all(AppSizes.p12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppColors.surfaceDark
+                          : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(AppSizes.r16),
+                      border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white12
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Öğrenciye Özel İptal Politikası',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            useCustomPolicy
+                                ? 'Bu öğrenci için özel kurallar geçerlidir.'
+                                : 'Genel öğretmen politikası geçerlidir.',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          value: useCustomPolicy,
+                          onChanged: (val) {
+                            setDialogState(() => useCustomPolicy = val);
+                          },
+                          activeThumbColor: AppColors.primary,
+                        ),
+                        if (useCustomPolicy) ...[
+                          const Divider(height: 20),
+                          TextField(
+                            controller: customEarlyHoursController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Erken İptal Süresi (Saat)',
+                              suffixText: 'saat',
+                              isDense: true,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: customLateFeeController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Geç İptal Ücret Oranı (%)',
+                              suffixText: '%',
+                              isDense: true,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: customNoShowFeeController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Gelmedi (No-Show) Ücret Oranı (%)',
+                              suffixText: '%',
+                              isDense: true,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              'Öğretmen İptalinde Telafi Hakkı',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                            value: customTeacherCompensable,
+                            onChanged: (v) {
+                              setDialogState(() => customTeacherCompensable = v);
+                            },
+                            activeThumbColor: AppColors.primary,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -196,12 +300,26 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
       final grade = (isCustom || selectedGrade == 'Özel / Diğer (Elle Yaz)')
           ? customGradeController.text.trim()
           : selectedGrade;
+      FeePolicy? customPolicy;
+      if (useCustomPolicy) {
+        customPolicy = FeePolicy(
+          earlyCancellationHours:
+              int.tryParse(customEarlyHoursController.text.trim()) ?? 24,
+          lateCancellationFeePercent:
+              double.tryParse(customLateFeeController.text.trim()) ?? 50.0,
+          noShowFeePercent:
+              double.tryParse(customNoShowFeeController.text.trim()) ?? 100.0,
+          teacherCancellationCompensable: customTeacherCompensable,
+        );
+      }
       final updated = currentStudent.copyWith(
         nickname: nicknameController.text.trim(),
         gradeLevel: grade.isNotEmpty ? grade : currentStudent.gradeLevel,
         subject: subjectController.text.trim().isNotEmpty
             ? subjectController.text.trim()
             : currentStudent.subject,
+        useCustomFeePolicy: useCustomPolicy,
+        customFeePolicy: customPolicy,
       );
       await ref.read(databaseServiceProvider).updateStudent(updated);
       if (mounted) {
@@ -898,6 +1016,31 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: AppSizes.p12),
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.r20),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.policy_rounded,
+                        color: AppColors.primary,
+                      ),
+                      title: const Text('İptal & Ücret Politikası'),
+                      subtitle: Text(
+                        currentStudent.useCustomFeePolicy &&
+                                currentStudent.customFeePolicy != null
+                            ? 'Özel Politika: ${currentStudent.customFeePolicy!.earlyCancellationHours}s öncesi %${currentStudent.customFeePolicy!.earlyCancellationFeePercent.toInt()}, geç iptal %${currentStudent.customFeePolicy!.lateCancellationFeePercent.toInt()}, no-show %${currentStudent.customFeePolicy!.noShowFeePercent.toInt()}'
+                            : 'Genel Öğretmen Politikası Kullanılıyor',
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit_rounded,
+                            color: AppColors.primary),
+                        onPressed: () => _editStudentDialog(currentStudent),
+                        tooltip: 'Politikayı Düzenle',
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1008,24 +1151,90 @@ class _StudentDetailViewState extends ConsumerState<StudentDetailView> {
                               }
 
                               final Lesson lesson = item as Lesson;
+                              final status = lesson.lessonStatus;
                               return Card(
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(
                                     AppSizes.r16,
                                   ),
+                                  side: BorderSide(
+                                    color: status.color.withValues(alpha: 0.3),
+                                  ),
                                 ),
                                 child: ListTile(
-                                  title: Text(lesson.topic),
-                                  subtitle: Text(
-                                    '${_formatDate(lesson.dateTime)} · ${lesson.durationMinutes} dk',
+                                  onTap: () => LessonDetailDialog.show(
+                                    context,
+                                    lesson,
+                                    student: currentStudent,
                                   ),
-                                  trailing: Icon(
-                                    lesson.isCompleted
-                                        ? Icons.check_circle
-                                        : Icons.schedule,
-                                    color: lesson.isCompleted
-                                        ? AppColors.success
-                                        : AppColors.textSecondaryDark,
+                                  leading: CircleAvatar(
+                                    backgroundColor:
+                                        status.color.withValues(alpha: 0.15),
+                                    child: Icon(
+                                      status.icon,
+                                      color: status.color,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  title: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          lesson.topic.isNotEmpty
+                                              ? lesson.topic
+                                              : 'Özel Ders',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: status.color
+                                              .withValues(alpha: 0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          status.displayName,
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: status.color,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  subtitle: Text(
+                                    '${_formatDate(lesson.dateTime)} · ${AppHelpers.formatTime(lesson.dateTime)} · ${lesson.durationMinutes} dk',
+                                  ),
+                                  trailing: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        AppHelpers.formatCurrency(lesson.price),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      if (lesson.chargePercentage != null &&
+                                          lesson.chargePercentage != 100.0)
+                                        Text(
+                                          'Yansıtılan: ${AppHelpers.formatCurrency(lesson.finalCharge)}',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: status.color,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                               );

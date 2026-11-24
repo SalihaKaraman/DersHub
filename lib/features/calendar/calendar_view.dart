@@ -14,6 +14,7 @@ import '../../services/group_lesson_service.dart';
 import '../../services/notification_service.dart';
 import 'add_group_lesson_sheet.dart';
 import 'group_lesson_detail_dialog.dart';
+import 'lesson_detail_dialog.dart';
 
 sealed class CalendarEventItem {
   DateTime get dateTime;
@@ -265,22 +266,92 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
 
   Widget _buildLessonTile(BuildContext context, Lesson lesson) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isPast = lesson.dateTime.isBefore(DateTime.now());
+    final status = lesson.lessonStatus;
 
     return Card(
-      color: isPast ? Colors.grey.shade100 : null,
-      child: ListTile(
-        onTap: () => _showLessonActions(context, lesson),
-        title: Text(lesson.studentName),
-        subtitle: Text(
-          '${AppHelpers.formatTime(lesson.dateTime)} · ${lesson.durationMinutes} dk · ${lesson.topic}',
+      color: isPast ? (isDark ? Colors.white10 : Colors.grey.shade100) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.r16),
+        side: BorderSide(
+          color: status.color.withValues(alpha: isDark ? 0.4 : 0.25),
+          width: 1,
         ),
-        trailing: Text(
-          AppHelpers.formatCurrency(lesson.price),
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: isPast ? Colors.grey : AppColors.primary,
-            fontWeight: FontWeight.bold,
+      ),
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        onTap: () => LessonDetailDialog.show(context, lesson),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: status.color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(AppSizes.r12),
           ),
+          child: Icon(status.icon, color: status.color, size: 22),
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                lesson.studentName,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: status.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                status.displayName,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: status.color,
+                ),
+              ),
+            ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            '${AppHelpers.formatTime(lesson.dateTime)} · ${lesson.durationMinutes} dk · ${lesson.topic}',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark
+                  ? AppColors.textSecondaryDark
+                  : AppColors.textSecondaryLight,
+            ),
+          ),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              AppHelpers.formatCurrency(lesson.price),
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: isPast ? Colors.grey : AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (lesson.chargePercentage != null &&
+                lesson.chargePercentage != 100.0)
+              Text(
+                'Yansıtılan: ${AppHelpers.formatCurrency(lesson.finalCharge)} (%${lesson.chargePercentage?.toInt()})',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: status.color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -380,60 +451,6 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showLessonActions(BuildContext context, Lesson lesson) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(AppSizes.p16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Ders Detayları',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: AppSizes.p12),
-            Text(
-              '${AppHelpers.formatDate(lesson.dateTime)} ${AppHelpers.formatTime(lesson.dateTime)}',
-            ),
-            const SizedBox(height: AppSizes.p8),
-            Text('Öğrenci: ${lesson.studentName}'),
-            const SizedBox(height: AppSizes.p4),
-            Text('Konu: ${lesson.topic}'),
-            const SizedBox(height: AppSizes.p4),
-            Text('Süre: ${lesson.durationMinutes} dk'),
-            const SizedBox(height: AppSizes.p16),
-            ElevatedButton(
-              onPressed: () async {
-                await ref
-                    .read(databaseServiceProvider)
-                    .updateLessonCompletion(lesson.id, true);
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: const Text('Tamamlandı İşaretle'),
-            ),
-            const SizedBox(height: AppSizes.p8),
-            OutlinedButton(
-              onPressed: () async {
-                await ref.read(databaseServiceProvider).deleteLesson(lesson.id);
-                if (context.mounted) Navigator.pop(context);
-              },
-              child: const Text('Sil'),
-            ),
-            const SizedBox(height: AppSizes.p8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Kapat'),
-            ),
-          ],
         ),
       ),
     );

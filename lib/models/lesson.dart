@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'lesson_status.dart';
 
 part 'lesson.freezed.dart';
 part 'lesson.g.dart';
@@ -18,9 +19,23 @@ class Lesson with _$Lesson {
     @Default(false) bool isCompleted,
     @Default('') String notes,
     required DateTime createdAt,
+    DateTime? statusUpdatedAt,
+    String? cancellationReason,
+    double? calculatedCharge,
+    double? chargePercentage,
+    @Default(false) bool createsCompensation,
   }) = _Lesson;
 
   const Lesson._();
+
+  LessonStatus get lessonStatus =>
+      LessonStatus.fromString(status, isCompleted: isCompleted);
+
+  double get finalCharge => calculatedCharge ?? (isCompleted ? price : 0.0);
+
+  bool get isCancelled =>
+      lessonStatus == LessonStatus.cancelledByStudent ||
+      lessonStatus == LessonStatus.cancelledByTeacher;
 
   factory Lesson.fromJson(Map<String, dynamic> json) => _$LessonFromJson(json);
 

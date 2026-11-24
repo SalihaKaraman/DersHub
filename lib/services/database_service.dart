@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/student.dart';
 import '../models/lesson.dart';
+import '../models/lesson_status.dart';
+import '../models/fee_policy.dart';
 import '../models/payment.dart';
 import '../models/note.dart';
 import 'auth_service.dart';
@@ -31,6 +33,10 @@ final notesStreamProvider = StreamProvider<List<Note>>((ref) {
   return ref.watch(databaseServiceProvider).getNotesStream();
 });
 
+final feePolicyStreamProvider = StreamProvider<FeePolicy>((ref) {
+  return ref.watch(databaseServiceProvider).getFeePolicyStream();
+});
+
 class DatabaseService {
   final Ref _ref;
   final AuthService _authService;
@@ -46,12 +52,15 @@ class DatabaseService {
       StreamController<List<Payment>>.broadcast();
   final StreamController<List<Note>> _notesController =
       StreamController<List<Note>>.broadcast();
+  final StreamController<FeePolicy> _feePolicyController =
+      StreamController<FeePolicy>.broadcast();
 
   // In-memory collections for mock mode
   final List<Student> _mockStudents = [];
   final List<Lesson> _mockLessons = [];
   final List<Payment> _mockPayments = [];
   final List<Note> _mockNotes = [];
+  FeePolicy _mockFeePolicy = const FeePolicy();
 
   DatabaseService(this._ref)
       : _authService = _ref.watch(authServiceProvider),
@@ -72,6 +81,9 @@ class DatabaseService {
       };
       _notesController.onListen = () {
         _notesController.add(List.unmodifiable(_mockNotes));
+      };
+      _feePolicyController.onListen = () {
+        _feePolicyController.add(_mockFeePolicy);
       };
     }
   }
@@ -252,6 +264,7 @@ class DatabaseService {
     _lessonsController.add(List.unmodifiable(_mockLessons));
     _paymentsController.add(List.unmodifiable(_mockPayments));
     _notesController.add(List.unmodifiable(_mockNotes));
+    _feePolicyController.add(_mockFeePolicy);
   }
 
   // --- Reactive Streams API ---
@@ -355,6 +368,62 @@ class DatabaseService {
         return list;
       });
     }
+  }
+
+  Stream<FeePolicy> getFeePolicyStream() {
+    if (_useMockMode) {
+      return _feePolicyController.stream;
+    } else {
+      return _firestore!
+          .collection('teachers')
+          .doc(_uid)
+          .collection('settings')
+          .doc('fee_policy')
+          .snapshots()
+          .map((snapshot) {
+        if (!snapshot.exists || snapshot.data() == null) {
+          return const FeePolicy();
+        }
+        try {
+          return FeePolicy.fromJson(snapshot.data()!);
+        } catch (_) {
+          return const FeePolicy();
+        }
+      });
+    }
+  }
+
+  FeePolicy get currentFeePolicy => _mockFeePolicy;
+
+  Future<void> updateFeePolicy(FeePolicy policy) async {
+    _mockFeePolicy = policy;
+    _feePolicyController.add(_mockFeePolicy);
+    if (!_useMockMode && _firestore != null) {
+      await _firestore
+          .collection('teachers')
+          .doc(_uid)
+          .collection('settings')
+          .doc('fee_policy')
+          .set(policy.toJson());
+    }
+  }
+
+  FeeCalculationResult calculateLessonFee({
+    required Lesson lesson,
+    required LessonStatus newStatus,
+    Student? student,
+    FeePolicy? explicitPolicy,
+    DateTime? statusUpdatedAt,
+  }) {
+    final policy = explicitPolicy ??
+        student?.resolvePolicy(_mockFeePolicy) ??
+        _mockFeePolicy;
+    return policy.calculateCharge(
+      lessonPrice: lesson.price,
+      lessonDateTime: lesson.dateTime,
+      status: newStatus,
+      statusUpdatedAt: statusUpdatedAt ?? DateTime.now(),
+    );
   }
 
   // --- Mutations (Add / Edit / Delete) ---
@@ -482,40 +551,121 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateLessonStatus(String lessonId, String status) async {
-    if (_useMockMode) {
-      final index = _mockLessons.indexWhere((l) => l.id == lessonId);
-      if (index != -1) {
-        _mockLessons[index] = _mockLessons[index].copyWith(status: status);
-        _lessonsController.add(List.from(_mockLessons));
-      }
-    } else {
-      await _firestore!
-          .collection('teachers')
-          .doc(_uid)
-          .collection('lessons')
-          .doc(lessonId)
-          .update({'status': status});
-    }
-  }
+  Future<void> updateLessonStatus({
+    required String lessonId,
+    required LessonStatus newStatus,
+    String? reason,
+    DateTime? statusUpdatedAt,
+    FeePolicy? explicitPolicy,
+  }) async {
+    final updatedAt = statusUpdatedAt ?? DateTime.now();
 
-  Future<void> updateLessonCompletion(String lessonId, bool completed) async {
     if (_useMockMode) {
       final index = _mockLessons.indexWhere((l) => l.id == lessonId);
       if (index != -1) {
-        _mockLessons[index] = _mockLessons[index].copyWith(
-          isCompleted: completed,
+        final lesson = _mockLessons[index];
+        final student = _mockStudents.cast<Student?>().firstWhere(
+              (s) => s?.id == lesson.studentId,
+              orElse: () => null,
+            );
+        final effectivePolicy = explicitPolicy ??
+            (student != null &&
+                    student.useCustomFeePolicy &&
+                    student.customFeePolicy != null
+                ? student.customFeePolicy!
+                : _mockFeePolicy);
+        final feeResult = effectivePolicy.calculateCharge(
+          lessonPrice: lesson.price,
+          lessonDateTime: lesson.dateTime,
+          status: newStatus,
+          statusUpdatedAt: updatedAt,
+        );
+
+        _mockLessons[index] = lesson.copyWith(
+          status: newStatus.name,
+          isCompleted: newStatus == LessonStatus.completed,
+          statusUpdatedAt: updatedAt,
+          cancellationReason: reason,
+          calculatedCharge: feeResult.calculatedCharge,
+          chargePercentage: feeResult.chargePercentage,
+          createsCompensation: feeResult.createsCompensation,
         );
         _lessonsController.add(List.from(_mockLessons));
       }
     } else {
-      await _firestore!
+      final lessonDoc = await _firestore!
           .collection('teachers')
           .doc(_uid)
           .collection('lessons')
           .doc(lessonId)
-          .update({'isCompleted': completed});
+          .get();
+
+      if (lessonDoc.exists && lessonDoc.data() != null) {
+        final lesson = Lesson.fromMap(lessonDoc.data()!, lessonDoc.id);
+        FeePolicy policy = explicitPolicy ?? const FeePolicy();
+
+        if (explicitPolicy == null) {
+          try {
+            final studentDoc = await _firestore
+                .collection('teachers')
+                .doc(_uid)
+                .collection('students')
+                .doc(lesson.studentId)
+                .get();
+
+            FeePolicy globalPolicy = const FeePolicy();
+            final policyDoc = await _firestore
+                .collection('teachers')
+                .doc(_uid)
+                .collection('settings')
+                .doc('fee_policy')
+                .get();
+            if (policyDoc.exists && policyDoc.data() != null) {
+              globalPolicy = FeePolicy.fromJson(policyDoc.data()!);
+            }
+
+            if (studentDoc.exists && studentDoc.data() != null) {
+              final student =
+                  Student.fromMap(studentDoc.data()!, studentDoc.id);
+              policy = student.resolvePolicy(globalPolicy);
+            } else {
+              policy = globalPolicy;
+            }
+          } catch (_) {
+            policy = const FeePolicy();
+          }
+        }
+
+        final feeResult = policy.calculateCharge(
+          lessonPrice: lesson.price,
+          lessonDateTime: lesson.dateTime,
+          status: newStatus,
+          statusUpdatedAt: updatedAt,
+        );
+
+        await _firestore
+            .collection('teachers')
+            .doc(_uid)
+            .collection('lessons')
+            .doc(lessonId)
+            .update({
+          'status': newStatus.name,
+          'isCompleted': newStatus == LessonStatus.completed,
+          'statusUpdatedAt': updatedAt.toIso8601String(),
+          'cancellationReason': reason,
+          'calculatedCharge': feeResult.calculatedCharge,
+          'chargePercentage': feeResult.chargePercentage,
+          'createsCompensation': feeResult.createsCompensation,
+        });
+      }
     }
+  }
+
+  Future<void> updateLessonCompletion(String lessonId, bool completed) async {
+    await updateLessonStatus(
+      lessonId: lessonId,
+      newStatus: completed ? LessonStatus.completed : LessonStatus.scheduled,
+    );
   }
 
   Future<void> deleteLesson(String lessonId) async {

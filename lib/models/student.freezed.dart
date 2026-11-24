@@ -29,6 +29,8 @@ mixin _$Student {
   DateTime get createdAt => throw _privateConstructorUsedError;
   bool get isActive => throw _privateConstructorUsedError;
   String? get phoneNumber => throw _privateConstructorUsedError;
+  bool get useCustomFeePolicy => throw _privateConstructorUsedError;
+  FeePolicy? get customFeePolicy => throw _privateConstructorUsedError;
 
   /// Serializes this Student to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -53,7 +55,11 @@ abstract class $StudentCopyWith<$Res> {
       double hourlyRate,
       DateTime createdAt,
       bool isActive,
-      String? phoneNumber});
+      String? phoneNumber,
+      bool useCustomFeePolicy,
+      FeePolicy? customFeePolicy});
+
+  $FeePolicyCopyWith<$Res>? get customFeePolicy;
 }
 
 /// @nodoc
@@ -80,6 +86,8 @@ class _$StudentCopyWithImpl<$Res, $Val extends Student>
     Object? createdAt = null,
     Object? isActive = null,
     Object? phoneNumber = freezed,
+    Object? useCustomFeePolicy = null,
+    Object? customFeePolicy = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -118,7 +126,29 @@ class _$StudentCopyWithImpl<$Res, $Val extends Student>
           ? _value.phoneNumber
           : phoneNumber // ignore: cast_nullable_to_non_nullable
               as String?,
+      useCustomFeePolicy: null == useCustomFeePolicy
+          ? _value.useCustomFeePolicy
+          : useCustomFeePolicy // ignore: cast_nullable_to_non_nullable
+              as bool,
+      customFeePolicy: freezed == customFeePolicy
+          ? _value.customFeePolicy
+          : customFeePolicy // ignore: cast_nullable_to_non_nullable
+              as FeePolicy?,
     ) as $Val);
+  }
+
+  /// Create a copy of Student
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $FeePolicyCopyWith<$Res>? get customFeePolicy {
+    if (_value.customFeePolicy == null) {
+      return null;
+    }
+
+    return $FeePolicyCopyWith<$Res>(_value.customFeePolicy!, (value) {
+      return _then(_value.copyWith(customFeePolicy: value) as $Val);
+    });
   }
 }
 
@@ -138,7 +168,12 @@ abstract class _$$StudentImplCopyWith<$Res> implements $StudentCopyWith<$Res> {
       double hourlyRate,
       DateTime createdAt,
       bool isActive,
-      String? phoneNumber});
+      String? phoneNumber,
+      bool useCustomFeePolicy,
+      FeePolicy? customFeePolicy});
+
+  @override
+  $FeePolicyCopyWith<$Res>? get customFeePolicy;
 }
 
 /// @nodoc
@@ -163,6 +198,8 @@ class __$$StudentImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? isActive = null,
     Object? phoneNumber = freezed,
+    Object? useCustomFeePolicy = null,
+    Object? customFeePolicy = freezed,
   }) {
     return _then(_$StudentImpl(
       id: null == id
@@ -201,6 +238,14 @@ class __$$StudentImplCopyWithImpl<$Res>
           ? _value.phoneNumber
           : phoneNumber // ignore: cast_nullable_to_non_nullable
               as String?,
+      useCustomFeePolicy: null == useCustomFeePolicy
+          ? _value.useCustomFeePolicy
+          : useCustomFeePolicy // ignore: cast_nullable_to_non_nullable
+              as bool,
+      customFeePolicy: freezed == customFeePolicy
+          ? _value.customFeePolicy
+          : customFeePolicy // ignore: cast_nullable_to_non_nullable
+              as FeePolicy?,
     ));
   }
 }
@@ -217,7 +262,9 @@ class _$StudentImpl extends _Student {
       required this.hourlyRate,
       required this.createdAt,
       required this.isActive,
-      this.phoneNumber})
+      this.phoneNumber,
+      this.useCustomFeePolicy = false,
+      this.customFeePolicy})
       : super._();
 
   factory _$StudentImpl.fromJson(Map<String, dynamic> json) =>
@@ -241,10 +288,15 @@ class _$StudentImpl extends _Student {
   final bool isActive;
   @override
   final String? phoneNumber;
+  @override
+  @JsonKey()
+  final bool useCustomFeePolicy;
+  @override
+  final FeePolicy? customFeePolicy;
 
   @override
   String toString() {
-    return 'Student(id: $id, teacherId: $teacherId, nickname: $nickname, gradeLevel: $gradeLevel, subject: $subject, hourlyRate: $hourlyRate, createdAt: $createdAt, isActive: $isActive, phoneNumber: $phoneNumber)';
+    return 'Student(id: $id, teacherId: $teacherId, nickname: $nickname, gradeLevel: $gradeLevel, subject: $subject, hourlyRate: $hourlyRate, createdAt: $createdAt, isActive: $isActive, phoneNumber: $phoneNumber, useCustomFeePolicy: $useCustomFeePolicy, customFeePolicy: $customFeePolicy)';
   }
 
   @override
@@ -267,13 +319,28 @@ class _$StudentImpl extends _Student {
             (identical(other.isActive, isActive) ||
                 other.isActive == isActive) &&
             (identical(other.phoneNumber, phoneNumber) ||
-                other.phoneNumber == phoneNumber));
+                other.phoneNumber == phoneNumber) &&
+            (identical(other.useCustomFeePolicy, useCustomFeePolicy) ||
+                other.useCustomFeePolicy == useCustomFeePolicy) &&
+            (identical(other.customFeePolicy, customFeePolicy) ||
+                other.customFeePolicy == customFeePolicy));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, teacherId, nickname,
-      gradeLevel, subject, hourlyRate, createdAt, isActive, phoneNumber);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      teacherId,
+      nickname,
+      gradeLevel,
+      subject,
+      hourlyRate,
+      createdAt,
+      isActive,
+      phoneNumber,
+      useCustomFeePolicy,
+      customFeePolicy);
 
   /// Create a copy of Student
   /// with the given fields replaced by the non-null parameter values.
@@ -301,7 +368,9 @@ abstract class _Student extends Student {
       required final double hourlyRate,
       required final DateTime createdAt,
       required final bool isActive,
-      final String? phoneNumber}) = _$StudentImpl;
+      final String? phoneNumber,
+      final bool useCustomFeePolicy,
+      final FeePolicy? customFeePolicy}) = _$StudentImpl;
   const _Student._() : super._();
 
   factory _Student.fromJson(Map<String, dynamic> json) = _$StudentImpl.fromJson;
@@ -324,6 +393,10 @@ abstract class _Student extends Student {
   bool get isActive;
   @override
   String? get phoneNumber;
+  @override
+  bool get useCustomFeePolicy;
+  @override
+  FeePolicy? get customFeePolicy;
 
   /// Create a copy of Student
   /// with the given fields replaced by the non-null parameter values.

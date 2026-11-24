@@ -7,6 +7,7 @@ import '../../models/lesson.dart';
 import '../../models/payment.dart';
 import '../../models/student.dart';
 import '../../models/teacher.dart';
+import '../../models/fee_policy.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../services/settings_service.dart';
@@ -160,6 +161,176 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
     );
   }
 
+  void _showFeePolicyDialog(FeePolicy currentPolicy) {
+    final hoursController = TextEditingController(
+      text: currentPolicy.earlyCancellationHours.toString(),
+    );
+    final lateFeeController = TextEditingController(
+      text: currentPolicy.lateCancellationFeePercent.toStringAsFixed(0),
+    );
+    final noShowFeeController = TextEditingController(
+      text: currentPolicy.noShowFeePercent.toStringAsFixed(0),
+    );
+    bool teacherCompensable = currentPolicy.teacherCancellationCompensable;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.r24),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.policy_rounded,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Ders & İptal Politikası',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'İptal ve devamsızlık durumlarında uygulanacak genel ücret politikalarını buradan belirleyebilirsiniz.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondaryLight,
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.p16),
+                    TextField(
+                      controller: hoursController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Erken İptal Süresi (Saat)',
+                        helperText:
+                            'Ders saatine bu süreden fazla kala iptaller ücretsizdir.',
+                        prefixIcon: Icon(Icons.timer_outlined),
+                        suffixText: 'saat',
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.p16),
+                    TextField(
+                      controller: lateFeeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Geç İptal Ücret Oranı (%)',
+                        helperText:
+                            'Belirlenen saatten az kala iptalde yansıtılacak ücret yüzdesi.',
+                        prefixIcon: Icon(Icons.percent_rounded),
+                        suffixText: '%',
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.p16),
+                    TextField(
+                      controller: noShowFeeController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Gelmedi (No-Show) Ücret Oranı (%)',
+                        helperText:
+                            'Haber vermeden gelinmeyen derste yansıtılacak ücret yüzdesi.',
+                        prefixIcon: Icon(Icons.person_off_outlined),
+                        suffixText: '%',
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.p16),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Öğretmen İptalinde Telafi'),
+                      subtitle: const Text(
+                        'Öğretmen dersi iptal ederse öğrenciye telafi dersi hakkı doğsun.',
+                      ),
+                      value: teacherCompensable,
+                      onChanged: (val) {
+                        setDialogState(() {
+                          teacherCompensable = val;
+                        });
+                      },
+                      activeThumbColor: AppColors.primary,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('İptal'),
+                ),
+                FilledButton.icon(
+                  onPressed: () async {
+                    final hours =
+                        int.tryParse(hoursController.text.trim()) ?? 24;
+                    final lateFee =
+                        double.tryParse(lateFeeController.text.trim()) ?? 50.0;
+                    final noShowFee =
+                        double.tryParse(noShowFeeController.text.trim()) ??
+                            100.0;
+
+                    final updatedPolicy = currentPolicy.copyWith(
+                      earlyCancellationHours: hours,
+                      lateCancellationFeePercent: lateFee,
+                      noShowFeePercent: noShowFee,
+                      teacherCancellationCompensable: teacherCompensable,
+                    );
+
+                    Navigator.pop(dialogContext);
+                    try {
+                      await ref
+                          .read(databaseServiceProvider)
+                          .updateFeePolicy(updatedPolicy);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Ders ücret politikası güncellendi.'),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Hata: ${e.toString()}'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Kaydet'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showDeleteAccountDialog() {
     showDialog<void>(
       context: context,
@@ -272,6 +443,8 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
     final studentsStream = ref.watch(studentsStreamProvider);
     final lessonsStream = ref.watch(lessonsStreamProvider);
     final paymentsStream = ref.watch(paymentsStreamProvider);
+    final feePolicyAsync = ref.watch(feePolicyStreamProvider);
+    final feePolicy = feePolicyAsync.value ?? const FeePolicy();
 
     final studentCount = studentsStream.when(
       data: (students) => students.length,
@@ -567,6 +740,66 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                               }
                             },
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSizes.p24),
+
+                  // ── Ders & İptal Ücret Politikası ──
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Ders & İptal Politikası',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => _showFeePolicyDialog(feePolicy),
+                        icon: const Icon(Icons.edit_rounded, size: 16),
+                        label: const Text('Düzenle'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSizes.p8),
+                  Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.r20),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildTappableProfileTile(
+                          label: 'Erken İptal Kuralı',
+                          value:
+                              '${feePolicy.earlyCancellationHours} saat öncesine kadar (%${feePolicy.earlyCancellationFeePercent.toInt()} ücret)',
+                          icon: Icons.timer_outlined,
+                          onTap: () => _showFeePolicyDialog(feePolicy),
+                        ),
+                        _buildTappableProfileTile(
+                          label: 'Geç İptal Ücreti',
+                          value:
+                              '%${feePolicy.lateCancellationFeePercent.toInt()} ücret yansıtılır',
+                          icon: Icons.event_busy_rounded,
+                          onTap: () => _showFeePolicyDialog(feePolicy),
+                        ),
+                        _buildTappableProfileTile(
+                          label: 'Gelmedi (No-Show)',
+                          value:
+                              '%${feePolicy.noShowFeePercent.toInt()} tam ücret yansıtılır',
+                          icon: Icons.person_off_outlined,
+                          onTap: () => _showFeePolicyDialog(feePolicy),
+                        ),
+                        _buildTappableProfileTile(
+                          label: 'Öğretmen İptali',
+                          value: feePolicy.teacherCancellationCompensable
+                              ? 'Ücretsiz + Telafi hakkı doğar'
+                              : 'Ücretsiz (Telafi yok)',
+                          icon: Icons.replay_rounded,
+                          onTap: () => _showFeePolicyDialog(feePolicy),
                         ),
                       ],
                     ),

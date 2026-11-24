@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants.dart';
 import '../../models/lesson.dart';
+import '../../models/lesson_status.dart';
 import '../../models/student.dart';
 import '../../services/parent_service.dart';
 import '../reports/reports_list_view.dart';
@@ -160,10 +161,14 @@ class _LessonsTab extends StatelessWidget {
 
     final now = DateTime.now();
     final upcoming = lessons
-        .where((l) => l.dateTime.isAfter(now) && !l.isCompleted)
+        .where((l) =>
+            l.dateTime.isAfter(now) &&
+            l.lessonStatus == LessonStatus.scheduled)
         .toList();
     final past = lessons
-        .where((l) => l.dateTime.isBefore(now) || l.isCompleted)
+        .where((l) =>
+            l.dateTime.isBefore(now) ||
+            l.lessonStatus != LessonStatus.scheduled)
         .toList();
 
     return ListView(
@@ -236,6 +241,7 @@ class _LessonCard extends StatelessWidget {
     final isDark = theme.brightness == Brightness.dark;
     final dateStr =
         DateFormat('d MMM y · HH:mm', 'tr_TR').format(lesson.dateTime);
+    final status = lesson.lessonStatus;
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppSizes.p12),
@@ -246,12 +252,12 @@ class _LessonCard extends StatelessWidget {
         border: Border.all(
           color: isPast
               ? Colors.grey.withValues(alpha: 0.2)
-              : AppColors.primary.withValues(alpha: 0.3),
+              : status.color.withValues(alpha: 0.3),
         ),
         boxShadow: [
           if (!isPast)
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: status.color.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -263,16 +269,12 @@ class _LessonCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: isPast
-                  ? Colors.grey.withValues(alpha: 0.1)
-                  : AppColors.primary.withValues(alpha: 0.12),
+              color: status.color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppSizes.r12),
             ),
             child: Icon(
-              lesson.isCompleted
-                  ? Icons.check_circle_rounded
-                  : Icons.schedule_rounded,
-              color: lesson.isCompleted ? AppColors.success : AppColors.primary,
+              status.icon,
+              color: status.color,
               size: 22,
             ),
           ),
@@ -285,7 +287,9 @@ class _LessonCard extends StatelessWidget {
                   lesson.topic.isEmpty ? 'Ders' : lesson.topic,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: isPast ? Colors.grey : null,
+                    color: isPast && status != LessonStatus.completed
+                        ? Colors.grey
+                        : null,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -295,6 +299,19 @@ class _LessonCard extends StatelessWidget {
                     color: AppColors.textSecondaryLight,
                   ),
                 ),
+                if (lesson.cancellationReason != null &&
+                    lesson.cancellationReason!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      'Sebep: ${lesson.cancellationReason}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                        color: status.color,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -308,24 +325,23 @@ class _LessonCard extends StatelessWidget {
                   color: AppColors.primary,
                 ),
               ),
-              if (lesson.isCompleted)
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.p8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppSizes.r8),
-                  ),
-                  child: const Text(
-                    'Tamamlandı',
-                    style: TextStyle(
-                      color: AppColors.success,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+              Container(
+                margin: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.p8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: status.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppSizes.r8),
+                ),
+                child: Text(
+                  status.displayName,
+                  style: TextStyle(
+                    color: status.color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+              ),
             ],
           ),
         ],

@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'fee_policy.dart';
 
 part 'student.freezed.dart';
 part 'student.g.dart';
@@ -15,6 +16,8 @@ class Student with _$Student {
     required DateTime createdAt,
     required bool isActive,
     String? phoneNumber,
+    @Default(false) bool useCustomFeePolicy,
+    FeePolicy? customFeePolicy,
   }) = _Student;
 
   const Student._();
@@ -27,4 +30,11 @@ class Student with _$Student {
   }
 
   Map<String, dynamic> toMap() => toJson();
+
+  FeePolicy resolvePolicy(FeePolicy globalPolicy) {
+    if (useCustomFeePolicy && customFeePolicy != null) {
+      return customFeePolicy!;
+    }
+    return globalPolicy;
+  }
 }

@@ -17,6 +17,10 @@ _$StudentImpl _$$StudentImplFromJson(Map<String, dynamic> json) =>
       createdAt: DateTime.parse(json['createdAt'] as String),
       isActive: json['isActive'] as bool,
       phoneNumber: json['phoneNumber'] as String?,
+      useCustomFeePolicy: json['useCustomFeePolicy'] as bool? ?? false,
+      customFeePolicy: json['customFeePolicy'] == null
+          ? null
+          : FeePolicy.fromJson(json['customFeePolicy'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$$StudentImplToJson(_$StudentImpl instance) =>
@@ -30,4 +34,6 @@ Map<String, dynamic> _$$StudentImplToJson(_$StudentImpl instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'isActive': instance.isActive,
       'phoneNumber': instance.phoneNumber,
+      'useCustomFeePolicy': instance.useCustomFeePolicy,
+      'customFeePolicy': instance.customFeePolicy,
     };
